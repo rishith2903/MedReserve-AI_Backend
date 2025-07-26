@@ -3,9 +3,9 @@ spring:
     name: medreserve-backend
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://dpg-d226ev3e5dus739afgcg-a.singapore-postgres.render.com:5432/medreserve}
-    username: ${DB_USERNAME:medreserve_user}
-    password: ${DB_PASSWORD:LqTb9nnnNKSANdeN9q7Ib0BzUMXZjMlZ}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
