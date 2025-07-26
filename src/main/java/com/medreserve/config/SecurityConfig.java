@@ -59,7 +59,7 @@ public class SecurityConfig {
                 // Public endpoints (with and without context path for compatibility)
                 .requestMatchers("/api/auth/**", "/auth/**").permitAll()
                 .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/actuator/health", "/actuator/ping", "/actuator/**").permitAll()
+                .requestMatchers("/actuator/**", "/api/actuator/**").permitAll()
                 .requestMatchers("/test/**", "/api/test/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 
