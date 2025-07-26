@@ -1,51 +1,45 @@
-# Multi-stage build for Spring Boot application
-FROM openjdk:17-jdk-slim AS build
-
-# Install Maven
-RUN apt-get update && \
-    apt-get install -y maven && \
-    rm -rf /var/lib/apt/lists/*
+# ---------- Build Stage ----------
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 
 # Set working directory
 WORKDIR /app
 
-# Copy pom.xml and download dependencies
+# Copy only pom.xml first to cache dependencies
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
 
-# Copy source code and build application
+# Copy source code
 COPY src ./src
+
+# Build the Spring Boot application, skip tests
 RUN mvn clean package -DskipTests
 
-# Runtime stage
+
+# ---------- Runtime Stage ----------
 FROM openjdk:17-jdk-slim
 
 # Set working directory
 WORKDIR /app
 
-# Create non-root user for security
+# Create non-root user for better security
 RUN groupadd -r medreserve && useradd -r -g medreserve medreserve
 
-# Copy the built JAR from build stage
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Copy built JAR from the build stage
 COPY --from=build /app/target/medreserve-backend-*.jar app.jar
 
-# Create uploads directory
+# Create necessary folders and set permissions
 RUN mkdir -p uploads logs && chown -R medreserve:medreserve /app
 
 # Switch to non-root user
 USER medreserve
 
-# Expose port
+# Expose the application port
 EXPOSE 8080
 
-# Install curl for health checks
-USER root
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-USER medreserve
+# Health check to validate container is alive
+HEALTHCHECK CMD curl -f http://localhost:8080/api/actuator/health || exit 1
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-8080}/api/actuator/health || exit 1
-
-# Run the application with dynamic port
+# Run the Spring Boot app with support for Render's dynamic port
 ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT:-8080}"]
