@@ -49,6 +49,8 @@ services:
         value: logs/medreserve.log
       - key: SHOW_SQL
         value: false
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://rishith2903.github.io,http://localhost:3000
 
 databases:
   - name: medreserve-db
