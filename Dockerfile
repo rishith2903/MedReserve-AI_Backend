@@ -4,10 +4,11 @@ FROM maven:3.9.6-eclipse-temurin-17 AS build
 # Set working directory
 WORKDIR /app
 
-# Copy only pom.xml first to cache dependencies
+# Copy pom.xml and download dependencies (caching layer)
 COPY pom.xml .
+RUN mvn dependency:go-offline
 
-# Copy source code
+# Copy full source code
 COPY src ./src
 
 # Build the Spring Boot application, skip tests
