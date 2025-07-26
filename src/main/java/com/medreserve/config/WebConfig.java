@@ -19,15 +19,15 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(rateLimitInterceptor)
-                .addPathPatterns("/api/**")
+                .addPathPatterns("/**")
                 .excludePathPatterns(
-                        "/api/auth/login",
-                        "/api/auth/signup",
-                        "/api/actuator/health",
-                        "/api/api/actuator/health",
-                        "/api/test/**",
-                        "/api/swagger-ui/**",
-                        "/api/api-docs/**"
+                        "/auth/login",
+                        "/auth/signup",
+                        "/auth/**",
+                        "/actuator/**",
+                        "/test/**",
+                        "/swagger-ui/**",
+                        "/api-docs/**"
                 );
     }
 }

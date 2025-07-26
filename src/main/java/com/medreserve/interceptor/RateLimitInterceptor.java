@@ -68,11 +68,14 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
     
     private RateLimitingConfig.RateLimitType determineLimitType(String requestURI) {
-        if (requestURI.contains("/ml/")) {
+        // Remove context path for consistent matching
+        String normalizedURI = requestURI.startsWith("/api/") ? requestURI.substring(4) : requestURI;
+
+        if (normalizedURI.contains("/ml/")) {
             return RateLimitingConfig.RateLimitType.ML_PREDICTION;
-        } else if (requestURI.contains("/chatbot/")) {
+        } else if (normalizedURI.contains("/chatbot/")) {
             return RateLimitingConfig.RateLimitType.CHAT;
-        } else if (requestURI.contains("/upload") || requestURI.contains("/medical-reports") || requestURI.contains("/prescriptions")) {
+        } else if (normalizedURI.contains("/upload") || normalizedURI.contains("/medical-reports") || normalizedURI.contains("/prescriptions")) {
             return RateLimitingConfig.RateLimitType.FILE_UPLOAD;
         } else {
             return RateLimitingConfig.RateLimitType.GENERAL;
