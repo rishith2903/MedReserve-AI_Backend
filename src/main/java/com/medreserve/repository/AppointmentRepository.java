@@ -87,8 +87,10 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("SELECT COUNT(a) FROM Appointment a WHERE a.patient.id = :patientId")
     long countAppointmentsByPatient(@Param("patientId") Long patientId);
     
-    @Query("SELECT a FROM Appointment a WHERE " +
-           "a.appointmentDateTime BETWEEN :startTime AND :endTime AND " +
+    @Query("SELECT a FROM Appointment a " +
+           "JOIN FETCH a.patient " +
+           "JOIN FETCH a.doctor " +
+           "WHERE a.appointmentDateTime BETWEEN :startTime AND :endTime AND " +
            "a.status IN ('SCHEDULED', 'CONFIRMED') " +
            "ORDER BY a.appointmentDateTime")
     List<Appointment> findAppointmentsForReminder(@Param("startTime") LocalDateTime startTime,
@@ -100,6 +102,12 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> findDueFollowUps(@Param("currentDate") LocalDateTime currentDate);
     
     Optional<Appointment> findByIdAndPatientId(Long appointmentId, Long patientId);
-    
+
     Optional<Appointment> findByIdAndDoctorId(Long appointmentId, Long doctorId);
+
+    @Query("SELECT a FROM Appointment a " +
+           "JOIN FETCH a.patient " +
+           "JOIN FETCH a.doctor " +
+           "WHERE a.id = :id")
+    Optional<Appointment> findByIdWithPatientAndDoctor(@Param("id") Long id);
 }

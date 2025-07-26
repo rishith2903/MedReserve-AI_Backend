@@ -11,6 +11,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -28,31 +29,41 @@ public class NotificationService {
     private String fromEmail;
     
     @Async
+    @Transactional
     public void sendAppointmentConfirmation(Appointment appointment) {
         try {
+            // Refresh the appointment with eager fetching to ensure session is active
+            Appointment freshAppointment = appointmentRepository.findByIdWithPatientAndDoctor(appointment.getId())
+                    .orElse(appointment);
+
             String subject = "Appointment Confirmation - MedReserve";
-            String body = buildAppointmentConfirmationEmail(appointment);
-            
-            sendEmail(appointment.getPatient().getEmail(), subject, body);
-            sendEmail(appointment.getDoctor().getEmail(), subject, body);
-            
+            String body = buildAppointmentConfirmationEmail(freshAppointment);
+
+            sendEmail(freshAppointment.getPatient().getEmail(), subject, body);
+            sendEmail(freshAppointment.getDoctor().getEmail(), subject, body);
+
             log.info("Appointment confirmation sent for appointment ID: {}", appointment.getId());
-            
+
         } catch (Exception e) {
             log.error("Failed to send appointment confirmation: {}", e.getMessage());
         }
     }
     
     @Async
+    @Transactional
     public void sendAppointmentReminder(Appointment appointment) {
         try {
+            // Refresh the appointment with eager fetching to ensure session is active
+            Appointment freshAppointment = appointmentRepository.findByIdWithPatientAndDoctor(appointment.getId())
+                    .orElse(appointment);
+
             String subject = "Appointment Reminder - MedReserve";
-            String body = buildAppointmentReminderEmail(appointment);
-            
-            sendEmail(appointment.getPatient().getEmail(), subject, body);
-            
+            String body = buildAppointmentReminderEmail(freshAppointment);
+
+            sendEmail(freshAppointment.getPatient().getEmail(), subject, body);
+
             log.info("Appointment reminder sent for appointment ID: {}", appointment.getId());
-            
+
         } catch (Exception e) {
             log.error("Failed to send appointment reminder: {}", e.getMessage());
         }
@@ -90,6 +101,7 @@ public class NotificationService {
     }
     
     @Scheduled(fixedRate = 3600000) // Run every hour
+    @Transactional
     public void sendScheduledReminders() {
         try {
             // Send reminders for appointments in the next 24 hours
