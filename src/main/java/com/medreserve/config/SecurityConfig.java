@@ -86,7 +86,7 @@ public class SecurityConfig {
         // Get allowed origins from environment variable, fallback to localhost for development
         String allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
         if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
-            configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+            configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
         } else {
             // Development fallback
             configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:*", "https://localhost:*"));
