@@ -5,7 +5,7 @@ services:
     plan: free
     autoDeploy: true
     region: singapore
-    healthCheckPath: /api/actuator/health
+    healthCheckPath: /api/api/actuator/health
     dockerfilePath: ./Dockerfile
     envVars:
       - key: SPRING_PROFILES_ACTIVE
