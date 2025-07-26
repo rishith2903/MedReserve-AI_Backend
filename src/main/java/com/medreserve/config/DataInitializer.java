@@ -14,6 +14,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,10 +34,12 @@ public class DataInitializer {
     private final PasswordEncoder passwordEncoder;
 
     @EventListener
+    @Transactional
     public void onApplicationReady(ApplicationReadyEvent event) {
         initializeData();
     }
 
+    @Transactional
     private void initializeData() {
         if (userRepository.count() > 0) {
             return; // Data already initialized
