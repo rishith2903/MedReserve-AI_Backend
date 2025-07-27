@@ -1,99 +1,47 @@
-package com.medreserve.controller;
+package com.medreserve.chatbot.controller;
 
-import com.medreserve.dto.ChatRequest;
-import com.medreserve.dto.ChatResponse;
-import com.medreserve.entity.User;
-import com.medreserve.service.ChatbotService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.List;
 
+/**
+ * Multilingual Dialogflow Webhook Controller
+ * 
+ * Handles webhook requests from Dialogflow CX/ES agents and returns
+ * localized responses in English, Hindi, and Telugu for medical intents.
+ */
 @RestController
-@RequestMapping("/chatbot")
-@RequiredArgsConstructor
-@Tag(name = "Chatbot", description = "AI-powered chatbot APIs")
+@RequestMapping("/api/chatbot")
+@CrossOrigin("*")
 @Slf4j
 public class ChatbotController {
 
-    private final ChatbotService chatbotService;
-
-    @Value("${chatbot.supported-languages:en,hi,te}")
+    @Value("${chatbot.supported-languages}")
     private List<String> supportedLanguages;
 
     @Value("${chatbot.default-language:en}")
     private String defaultLanguage;
-    
-    @PostMapping("/chat")
-    @PreAuthorize("hasRole('PATIENT') or hasRole('DOCTOR')")
-    @Operation(summary = "Chat with AI assistant", description = "Send a message to the AI chatbot and get a response")
-    public ResponseEntity<ChatResponse> chat(
-            @Valid @RequestBody ChatRequest request,
-            @AuthenticationPrincipal User currentUser,
-            HttpServletRequest httpRequest) {
-        
-        // Extract JWT token from request
-        String authHeader = httpRequest.getHeader("Authorization");
-        String jwtToken = null;
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwtToken = authHeader.substring(7);
-        }
-        
-        ChatResponse response = chatbotService.processMessage(request, jwtToken);
-        return ResponseEntity.ok(response);
-    }
-    
-    @GetMapping("/intents")
-    @Operation(summary = "Get available intents", description = "Get list of available chatbot intents and their descriptions")
-    public ResponseEntity<Map<String, Object>> getAvailableIntents(
-            HttpServletRequest httpRequest) {
-        
-        // Extract JWT token from request
-        String authHeader = httpRequest.getHeader("Authorization");
-        String jwtToken = null;
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwtToken = authHeader.substring(7);
-        }
-        
-        Map<String, Object> intents = chatbotService.getAvailableIntents(jwtToken);
-        return ResponseEntity.ok(intents);
-    }
-    
-    @GetMapping("/health")
-    @Operation(summary = "Chatbot service health", description = "Check chatbot service health status")
-    public ResponseEntity<Map<String, Object>> getChatbotServiceHealth() {
-        boolean isHealthy = chatbotService.isChatbotServiceHealthy();
 
-        Map<String, Object> response = Map.of(
-                "chatbot_service_healthy", isHealthy,
-                "status", isHealthy ? "UP" : "DOWN",
-                "timestamp", java.time.LocalDateTime.now()
-        );
-
-        return ResponseEntity.ok(response);
-    }
+    @Value("${chatbot.debug-mode:false}")
+    private boolean debugMode;
 
     /**
-     * Dialogflow Webhook Endpoint
-     * Handles multilingual webhook requests from Dialogflow CX/ES agents
+     * Main webhook endpoint for Dialogflow
+     * 
+     * @param request Dialogflow webhook request containing queryResult
+     * @return ResponseEntity with fulfillmentText for Dialogflow
      */
-    @PostMapping("/webhook")
-    @CrossOrigin("*")
-    @Operation(summary = "Dialogflow webhook", description = "Webhook endpoint for Dialogflow CX/ES agents with multilingual support")
-    public ResponseEntity<Map<String, Object>> handleDialogflowWebhook(@RequestBody Map<String, Object> request) {
+    @PostMapping
+    public ResponseEntity<Map<String, Object>> handleWebhook(@RequestBody Map<String, Object> request) {
         try {
-            log.info("📥 Incoming Dialogflow webhook request");
+            if (debugMode) {
+                log.info("📥 Incoming Dialogflow request: {}", request);
+            }
 
             // Extract queryResult from Dialogflow request
             Map<String, Object> queryResult = (Map<String, Object>) request.get("queryResult");
@@ -107,10 +55,10 @@ public class ChatbotController {
             if (languageCode == null || languageCode.isEmpty()) {
                 languageCode = defaultLanguage;
             }
-
+            
             // Normalize language code (remove region if present, e.g., "en-US" -> "en")
             languageCode = languageCode.split("-")[0].toLowerCase();
-
+            
             // Validate supported language
             if (!supportedLanguages.contains(languageCode)) {
                 log.warn("⚠️ Unsupported language: {}, using default: {}", languageCode, defaultLanguage);
@@ -131,56 +79,76 @@ public class ChatbotController {
             log.info("🎯 Processing intent: {} in language: {}", intentName, languageCode);
 
             // Generate localized response
-            String fulfillmentText = generateMultilingualResponse(intentName, languageCode);
-
+            String fulfillmentText = generateResponse(intentName, languageCode);
+            
             // Create Dialogflow response
             Map<String, Object> response = new HashMap<>();
             response.put("fulfillmentText", fulfillmentText);
+            
+            // Add additional response data for debugging
+            if (debugMode) {
+                Map<String, Object> debugInfo = new HashMap<>();
+                debugInfo.put("detectedIntent", intentName);
+                debugInfo.put("detectedLanguage", languageCode);
+                debugInfo.put("timestamp", System.currentTimeMillis());
+                response.put("debugInfo", debugInfo);
+            }
 
             log.info("📤 Sending response: {}", fulfillmentText);
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.error("❌ Error processing Dialogflow webhook request", e);
+            log.error("❌ Error processing webhook request", e);
             return ResponseEntity.internalServerError()
                     .body(createErrorResponse("Internal server error: " + e.getMessage()));
         }
     }
 
     /**
-     * Test endpoint for Dialogflow webhook
+     * Health check endpoint
      */
-    @PostMapping("/webhook/test")
-    @Operation(summary = "Test Dialogflow webhook", description = "Test endpoint for manual testing of multilingual responses")
-    public ResponseEntity<Map<String, Object>> testDialogflowWebhook(
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, Object>> healthCheck() {
+        Map<String, Object> health = new HashMap<>();
+        health.put("status", "healthy");
+        health.put("service", "MedReserve Multilingual Chatbot");
+        health.put("supportedLanguages", supportedLanguages);
+        health.put("timestamp", System.currentTimeMillis());
+        return ResponseEntity.ok(health);
+    }
+
+    /**
+     * Test endpoint for manual testing
+     */
+    @PostMapping("/test")
+    public ResponseEntity<Map<String, Object>> testIntent(
             @RequestParam String intent,
             @RequestParam(defaultValue = "en") String language) {
-
-        String response = generateMultilingualResponse(intent, language);
+        
+        String response = generateResponse(intent, language);
         Map<String, Object> result = new HashMap<>();
         result.put("intent", intent);
         result.put("language", language);
-        result.put("fulfillmentText", response);
-        result.put("timestamp", System.currentTimeMillis());
+        result.put("response", response);
         return ResponseEntity.ok(result);
     }
 
     /**
      * Generate localized response based on intent and language
      */
-    private String generateMultilingualResponse(String intentName, String languageCode) {
+    private String generateResponse(String intentName, String languageCode) {
         return switch (intentName.toLowerCase()) {
-            case "bookappointment", "book.appointment", "appointment.book" ->
+            case "bookappointment", "book.appointment", "appointment.book" -> 
                 getBookingResponse(languageCode);
-            case "cancelappointment", "cancel.appointment", "appointment.cancel" ->
+            case "cancelappointment", "cancel.appointment", "appointment.cancel" -> 
                 getCancelResponse(languageCode);
-            case "listmedicines", "list.medicines", "medicines.list", "medicine.info" ->
+            case "listmedicines", "list.medicines", "medicines.list", "medicine.info" -> 
                 getMedicineResponse(languageCode);
-            case "conditionexplainer", "condition.explainer", "health.condition", "disease.info" ->
+            case "conditionexplainer", "condition.explainer", "health.condition", "disease.info" -> 
                 getConditionResponse(languageCode);
-            case "faq", "help", "support" ->
+            case "faq", "help", "support" -> 
                 getFaqResponse(languageCode);
-            default ->
+            default -> 
                 getDefaultResponse(languageCode);
         };
     }

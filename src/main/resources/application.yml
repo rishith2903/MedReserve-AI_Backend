@@ -49,6 +49,33 @@ jwt:
   expiration: ${JWT_EXPIRATION:86400000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
+# External Services Configuration
+ml:
+  service:
+    url: ${ML_SERVICE_URL:http://localhost:8001}
+
+chatbot:
+  service:
+    url: ${CHATBOT_SERVICE_URL:http://localhost:8002}
+  # Multilingual Dialogflow Configuration
+  supported-languages:
+    - en
+    - hi
+    - te
+  default-language: en
+  debug-mode: ${CHATBOT_DEBUG_MODE:false}
+
+disease:
+  prediction:
+    service:
+      url: ${DISEASE_PREDICTION_SERVICE_URL:http://localhost:8003}
+    fallback:
+      enabled: ${DISEASE_PREDICTION_FALLBACK_ENABLED:true}
+
+# CORS Configuration
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+
 logging:
   level:
     root: INFO
