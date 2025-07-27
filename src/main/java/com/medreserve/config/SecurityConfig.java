@@ -83,13 +83,17 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Get allowed origins from environment variable, fallback to localhost for development
+        // Get allowed origins from environment variable, fallback includes production frontend
         String allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
         if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
             configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
         } else {
-            // Development fallback
-            configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:*", "https://localhost:*"));
+            // Fallback includes both development and production origins
+            configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",
+                "https://localhost:*",
+                "https://rishith2903.github.io"
+            ));
         }
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
