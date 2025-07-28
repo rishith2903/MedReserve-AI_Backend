@@ -74,7 +74,7 @@ disease:
 
 # CORS Configuration
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://med-reserve-ai.vercel.app,https://rishith2903.github.io,http://localhost:3000,http://localhost:3001,http://localhost:5173}
 
 logging:
   level:

@@ -50,7 +50,7 @@ services:
       - key: SHOW_SQL
         value: false
       - key: CORS_ALLOWED_ORIGINS
-        value: https://rishith2903.github.io/**,http://localhost:*
+        value: https://med-reserve-ai.vercel.app,https://rishith2903.github.io,http://localhost:*
 
 databases:
   - name: medreserve-db
