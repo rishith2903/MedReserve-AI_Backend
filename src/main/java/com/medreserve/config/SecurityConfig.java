@@ -88,6 +88,10 @@ public class SecurityConfig {
         String allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
         if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
             String[] origins = allowedOrigins.split(",");
+            // Trim whitespace from each origin
+            for (int i = 0; i < origins.length; i++) {
+                origins[i] = origins[i].trim();
+            }
             System.out.println("CORS: Using environment variable origins: " + Arrays.toString(origins));
             configuration.setAllowedOriginPatterns(Arrays.asList(origins));
         } else {
@@ -96,7 +100,8 @@ public class SecurityConfig {
                 "http://localhost:*",
                 "https://localhost:*",
                 "https://rishith2903.github.io",
-                "https://med-reserve-ai.vercel.app"
+                "https://med-reserve-ai.vercel.app",
+                "https://*.vercel.app"  // Allow all Vercel apps temporarily
             };
             System.out.println("CORS: Using fallback origins: " + Arrays.toString(fallbackOrigins));
             configuration.setAllowedOriginPatterns(Arrays.asList(fallbackOrigins));
