@@ -43,12 +43,6 @@ public class AuthController {
             return ResponseEntity.badRequest().build();
         }
     }
-
-    @PostMapping("/login")
-    @Operation(summary = "User login (alias)", description = "Authenticate user and return JWT tokens")
-    public ResponseEntity<JwtResponse> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
-        return authenticateUser(loginRequest);
-    }
     
     @PostMapping("/signup")
     @Operation(summary = "User registration", description = "Register a new user")
