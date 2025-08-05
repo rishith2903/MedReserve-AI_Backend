@@ -36,7 +36,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // RESTORED: Rate limiter with correct paths (no /api prefix)
+        // TEMPORARILY DISABLED: Rate limiter still causing issues
+        // Will re-enable after confirming all endpoints work
+        /*
         registry.addInterceptor(rateLimitInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(
@@ -56,5 +58,6 @@ public class WebConfig implements WebMvcConfigurer {
                         "/swagger-ui/**",
                         "/api-docs/**"
                 );
+        */
     }
 }
