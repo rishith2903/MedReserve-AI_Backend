@@ -3,6 +3,9 @@ package com.medreserve.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medreserve.dto.LoginRequest;
 import com.medreserve.dto.SignupRequest;
+import com.medreserve.entity.User;
+
+import java.time.LocalDate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -40,8 +44,8 @@ class FullApplicationIntegrationTest {
         signupRequest.setFirstName("Integration");
         signupRequest.setLastName("Test");
         signupRequest.setPhoneNumber("+1987654321");
-        signupRequest.setDateOfBirth("1990-01-01");
-        signupRequest.setGender("MALE");
+        signupRequest.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        signupRequest.setGender(User.Gender.MALE);
 
         mockMvc.perform(post("/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -58,7 +62,7 @@ class FullApplicationIntegrationTest {
                 .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
-                .andExpect(jsonPath("$.tokenType").value("Bearer"));
+                .andExpect(jsonPath("$.type").value("Bearer"));
     }
 
     @Test
@@ -137,7 +141,7 @@ class FullApplicationIntegrationTest {
                 .param("size", "5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
-                .andExpected(jsonPath("$.pageable").exists())
+                .andExpect(jsonPath("$.pageable").exists())
                 .andExpect(jsonPath("$.totalElements").exists());
     }
 

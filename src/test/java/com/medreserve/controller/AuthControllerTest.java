@@ -3,7 +3,9 @@ package com.medreserve.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medreserve.dto.JwtResponse;
 import com.medreserve.dto.LoginRequest;
+import com.medreserve.dto.MessageResponse;
 import com.medreserve.dto.SignupRequest;
+import com.medreserve.entity.User;
 import com.medreserve.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +18,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import java.time.LocalDate;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -50,15 +54,19 @@ class AuthControllerTest {
         validSignupRequest.setFirstName("Test");
         validSignupRequest.setLastName("User");
         validSignupRequest.setPhoneNumber("+1234567890");
-        validSignupRequest.setDateOfBirth("1990-01-01");
-        validSignupRequest.setGender("MALE");
+        validSignupRequest.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        validSignupRequest.setGender(User.Gender.MALE);
 
         // Setup mock JWT response
         mockJwtResponse = new JwtResponse();
         mockJwtResponse.setAccessToken("mock-jwt-token");
         mockJwtResponse.setRefreshToken("mock-refresh-token");
-        mockJwtResponse.setTokenType("Bearer");
-        mockJwtResponse.setExpiresIn(3600L);
+        mockJwtResponse.setType("Bearer");
+        mockJwtResponse.setId(1L);
+        mockJwtResponse.setEmail("test@example.com");
+        mockJwtResponse.setFirstName("Test");
+        mockJwtResponse.setLastName("User");
+        mockJwtResponse.setRole("PATIENT");
     }
 
     @Test
@@ -75,7 +83,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.accessToken").value("mock-jwt-token"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"));
+                .andExpect(jsonPath("$.type").value("Bearer"));
     }
 
     @Test
@@ -100,15 +108,17 @@ class AuthControllerTest {
     @DisplayName("Should successfully register new user")
     void testSuccessfulSignup() throws Exception {
         // Given
+        MessageResponse mockResponse = new MessageResponse("User registered successfully!", true);
         when(authService.registerUser(any(SignupRequest.class)))
-                .thenReturn("User registered successfully!");
+                .thenReturn(mockResponse);
 
         // When & Then
         mockMvc.perform(post("/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validSignupRequest)))
                 .andExpect(status().isOk())
-                .andExpect(content().string("User registered successfully!"));
+                .andExpect(jsonPath("$.message").value("User registered successfully!"))
+                .andExpect(jsonPath("$.success").value(true));
     }
 
     @Test

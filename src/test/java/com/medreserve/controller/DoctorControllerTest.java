@@ -45,20 +45,20 @@ class DoctorControllerTest {
         doctor1.setFirstName("Dr. John");
         doctor1.setLastName("Smith");
         doctor1.setSpecialty("CARDIOLOGY");
-        doctor1.setExperience(10);
-        doctor1.setRating(4.5);
+        doctor1.setYearsOfExperience(10);
+        doctor1.setAverageRating(new BigDecimal("4.5"));
         doctor1.setConsultationFee(new BigDecimal("2000"));
-        doctor1.setAvailable(true);
+        doctor1.setIsAvailable(true);
 
         DoctorResponse doctor2 = new DoctorResponse();
         doctor2.setId(2L);
         doctor2.setFirstName("Dr. Sarah");
         doctor2.setLastName("Johnson");
         doctor2.setSpecialty("DERMATOLOGY");
-        doctor2.setExperience(8);
-        doctor2.setRating(4.7);
+        doctor2.setYearsOfExperience(8);
+        doctor2.setAverageRating(new BigDecimal("4.7"));
         doctor2.setConsultationFee(new BigDecimal("1500"));
-        doctor2.setAvailable(true);
+        doctor2.setIsAvailable(true);
 
         mockDoctors = Arrays.asList(doctor1, doctor2);
 
@@ -134,7 +134,7 @@ class DoctorControllerTest {
         mockMvc.perform(get("/doctors/specialties"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpected(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(6))
                 .andExpect(jsonPath("$[0]").value("CARDIOLOGY"))
                 .andExpect(jsonPath("$[1]").value("DERMATOLOGY"));
@@ -163,15 +163,16 @@ class DoctorControllerTest {
     @DisplayName("Should get top rated doctors")
     void testGetTopRatedDoctors() throws Exception {
         // Given
-        when(doctorService.getTopRatedDoctors(any())).thenReturn(mockDoctors);
+        Page<DoctorResponse> topRatedPage = new PageImpl<>(mockDoctors, PageRequest.of(0, 5), mockDoctors.size());
+        when(doctorService.getTopRatedDoctors(any())).thenReturn(topRatedPage);
 
         // When & Then
         mockMvc.perform(get("/doctors/top-rated")
                 .param("limit", "5"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(2));
     }
 
     @Test
