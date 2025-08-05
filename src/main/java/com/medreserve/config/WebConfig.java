@@ -36,39 +36,25 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // TEMPORARILY DISABLED: Rate limiter causing 403 errors on all endpoints
-        // TODO: Re-enable after fixing the path pattern matching issue
-        /*
+        // RESTORED: Rate limiter with correct paths (no /api prefix)
         registry.addInterceptor(rateLimitInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(
                         "/auth/login",
                         "/auth/signup",
                         "/auth/refresh",
+                        "/auth/signin",
                         "/auth/**",
-                        "/api/auth/login",
-                        "/api/auth/signup",
-                        "/api/auth/refresh",
-                        "/api/auth/**",
                         "/actuator/**",
-                        "/api/actuator/**",
                         "/test/**",
-                        "/api/test/**",
                         "/debug/**",
-                        "/api/debug/**",
                         "/doctors/specialties",
                         "/doctors/search",
                         "/doctors",
                         "/doctors/*",
-                        "/api/doctors/specialties",
-                        "/api/doctors/search",
-                        "/api/doctors",
-                        "/api/doctors/*",
                         "/smart-features/conditions/*",
-                        "/api/smart-features/conditions/*",
                         "/swagger-ui/**",
                         "/api-docs/**"
                 );
-        */
     }
 }

@@ -56,25 +56,18 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // TEMPORARILY ALLOW ALL REQUESTS - DEBUGGING 403 ISSUE
-                .anyRequest().permitAll()
-
-                /* ORIGINAL CONFIGURATION - RESTORE AFTER FIXING 403 ISSUE
-                // Public endpoints (with and without context path for compatibility)
-                .requestMatchers("/api/auth/login", "/auth/login", "/api/auth/signup", "/auth/signup", "/api/auth/refresh", "/auth/refresh").permitAll()
+                // RESTORED PROPER SECURITY - 403 issue was path mismatch, not security
+                // Public endpoints (corrected paths without /api prefix)
+                .requestMatchers("/auth/login", "/auth/signup", "/auth/refresh", "/auth/signin").permitAll()
                 .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/actuator/**", "/api/actuator/**").permitAll()
-                .requestMatchers("/test/**", "/api/test/**").permitAll()
-                .requestMatchers("/debug/**", "/api/debug/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/test/**", "/debug/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
-                // Public doctor endpoints
+                // Public doctor endpoints (corrected paths)
                 .requestMatchers("/doctors/specialties", "/doctors/search", "/doctors", "/doctors/*").permitAll()
                 .requestMatchers("/doctors/specialty/*", "/doctors/filter/**", "/doctors/top-rated").permitAll()
-                .requestMatchers("/api/doctors/specialties", "/api/doctors/search", "/api/doctors", "/api/doctors/*").permitAll()
-                .requestMatchers("/api/doctors/specialty/*", "/api/doctors/filter/**", "/api/doctors/top-rated").permitAll()
                 // Public smart features endpoints
                 .requestMatchers("/smart-features/conditions/*").permitAll()
-                .requestMatchers("/api/smart-features/conditions/*").permitAll()
 
                 // Role-based access
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "MASTER_ADMIN")
@@ -84,7 +77,6 @@ public class SecurityConfig {
 
                 // Authenticated endpoints
                 .anyRequest().authenticated()
-                */
             );
         
         http.authenticationProvider(authenticationProvider());
