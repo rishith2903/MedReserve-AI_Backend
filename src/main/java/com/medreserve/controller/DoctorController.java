@@ -9,12 +9,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,6 +25,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/doctors")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Doctors", description = "Doctor management APIs")
 public class DoctorController {
     
@@ -42,8 +46,17 @@ public class DoctorController {
     @GetMapping
     @Operation(summary = "Get all doctors", description = "Get all available doctors with pagination")
     public ResponseEntity<Page<DoctorResponse>> getAllDoctors(Pageable pageable) {
-        Page<DoctorResponse> doctors = doctorService.getAllDoctors(pageable);
-        return ResponseEntity.ok(doctors);
+        try {
+            log.info("Fetching all doctors with pagination: page={}, size={}",
+                pageable.getPageNumber(), pageable.getPageSize());
+            Page<DoctorResponse> doctors = doctorService.getAllDoctors(pageable);
+            log.info("Successfully fetched {} doctors", doctors.getTotalElements());
+            return ResponseEntity.ok(doctors);
+        } catch (Exception e) {
+            log.error("Error fetching all doctors: {}", e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Error fetching doctors: " + e.getMessage());
+        }
     }
     
     @GetMapping("/{doctorId}")
@@ -67,8 +80,17 @@ public class DoctorController {
     public ResponseEntity<Page<DoctorResponse>> searchDoctors(
             @RequestParam String keyword,
             Pageable pageable) {
-        Page<DoctorResponse> doctors = doctorService.searchDoctors(keyword, pageable);
-        return ResponseEntity.ok(doctors);
+        try {
+            log.info("Searching doctors with keyword: '{}', page={}, size={}",
+                keyword, pageable.getPageNumber(), pageable.getPageSize());
+            Page<DoctorResponse> doctors = doctorService.searchDoctors(keyword, pageable);
+            log.info("Search found {} doctors for keyword: '{}'", doctors.getTotalElements(), keyword);
+            return ResponseEntity.ok(doctors);
+        } catch (Exception e) {
+            log.error("Error searching doctors with keyword '{}': {}", keyword, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Error searching doctors: " + e.getMessage());
+        }
     }
     
     @GetMapping("/filter/fee-range")
