@@ -61,6 +61,7 @@ public class SecurityConfig {
                 .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/actuator/**", "/api/actuator/**").permitAll()
                 .requestMatchers("/test/**", "/api/test/**").permitAll()
+                .requestMatchers("/debug/**", "/api/debug/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 
                 // Role-based access
