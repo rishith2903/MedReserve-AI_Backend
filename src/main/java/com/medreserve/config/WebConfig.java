@@ -36,6 +36,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // TEMPORARILY DISABLED: Rate limiter causing 403 errors on all endpoints
+        // TODO: Re-enable after fixing the path pattern matching issue
+        /*
         registry.addInterceptor(rateLimitInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(
@@ -66,5 +69,6 @@ public class WebConfig implements WebMvcConfigurer {
                         "/swagger-ui/**",
                         "/api-docs/**"
                 );
+        */
     }
 }
