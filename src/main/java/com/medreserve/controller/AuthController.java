@@ -34,6 +34,17 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "User login (alias)", description = "Authenticate user and return JWT tokens - alias for /signin")
+    public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+        try {
+            JwtResponse jwtResponse = authService.authenticateUser(loginRequest);
+            return ResponseEntity.ok(jwtResponse);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/login")
     @Operation(summary = "User login (alias)", description = "Authenticate user and return JWT tokens")
     public ResponseEntity<JwtResponse> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
         return authenticateUser(loginRequest);
