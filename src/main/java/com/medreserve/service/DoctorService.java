@@ -104,8 +104,14 @@ public class DoctorService {
     }
     
     public Page<DoctorResponse> getAllDoctors(Pageable pageable) {
-        Page<Doctor> doctors = doctorRepository.findByIsAvailableTrue(pageable);
-        return doctors.map(this::convertToResponse);
+        try {
+            Page<Doctor> doctors = doctorRepository.findByIsAvailableTrue(pageable);
+            log.info("Found {} doctors", doctors.getTotalElements());
+            return doctors.map(this::convertToResponse);
+        } catch (Exception e) {
+            log.error("Error fetching doctors: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error fetching doctors: " + e.getMessage());
+        }
     }
     
     public Page<DoctorResponse> getDoctorsBySpecialty(String specialty, Pageable pageable) {
@@ -114,8 +120,14 @@ public class DoctorService {
     }
     
     public Page<DoctorResponse> searchDoctors(String keyword, Pageable pageable) {
-        Page<Doctor> doctors = doctorRepository.searchDoctors(keyword, pageable);
-        return doctors.map(this::convertToResponse);
+        try {
+            Page<Doctor> doctors = doctorRepository.searchDoctors(keyword, pageable);
+            log.info("Found {} doctors for keyword: {}", doctors.getTotalElements(), keyword);
+            return doctors.map(this::convertToResponse);
+        } catch (Exception e) {
+            log.error("Error searching doctors with keyword '{}': {}", keyword, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error searching doctors: " + e.getMessage());
+        }
     }
     
     public List<DoctorResponse> getDoctorsByConsultationFeeRange(BigDecimal minFee, BigDecimal maxFee) {
