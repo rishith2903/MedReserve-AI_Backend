@@ -63,6 +63,14 @@ public class SecurityConfig {
                 .requestMatchers("/test/**", "/api/test/**").permitAll()
                 .requestMatchers("/debug/**", "/api/debug/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
+                // Public doctor endpoints
+                .requestMatchers("/doctors/specialties", "/doctors/search", "/doctors", "/doctors/*").permitAll()
+                .requestMatchers("/doctors/specialty/*", "/doctors/filter/**", "/doctors/top-rated").permitAll()
+                .requestMatchers("/api/doctors/specialties", "/api/doctors/search", "/api/doctors", "/api/doctors/*").permitAll()
+                .requestMatchers("/api/doctors/specialty/*", "/api/doctors/filter/**", "/api/doctors/top-rated").permitAll()
+                // Public smart features endpoints
+                .requestMatchers("/smart-features/conditions/*").permitAll()
+                .requestMatchers("/api/smart-features/conditions/*").permitAll()
                 
                 // Role-based access
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "MASTER_ADMIN")
