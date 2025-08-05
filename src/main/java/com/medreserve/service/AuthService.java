@@ -4,6 +4,7 @@ import com.medreserve.dto.JwtResponse;
 import com.medreserve.dto.LoginRequest;
 import com.medreserve.dto.MessageResponse;
 import com.medreserve.dto.SignupRequest;
+import com.medreserve.dto.UserProfileUpdateRequest;
 import com.medreserve.entity.Role;
 import com.medreserve.entity.User;
 import com.medreserve.repository.RoleRepository;
@@ -96,14 +97,47 @@ public class AuthService {
             String username = jwtUtils.getUserNameFromJwtToken(refreshToken);
             User user = userRepository.findByEmail(username)
                     .orElseThrow(() -> new RuntimeException("User not found: " + username));
-            
+
             String newAccessToken = jwtUtils.generateTokenFromUsername(username, 86400000); // 24 hours
-            
+
             return new JwtResponse(newAccessToken, refreshToken, user.getId(), user.getEmail(),
                                   user.getFirstName(), user.getLastName(),
                                   user.getRole().getName().name());
         } else {
             throw new RuntimeException("Invalid refresh token");
         }
+    }
+
+    @Transactional
+    public User updateUserProfile(Long userId, UserProfileUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Check if email is being changed and if it's already in use by another user
+        if (!user.getEmail().equals(request.getEmail()) &&
+            userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email is already in use by another user");
+        }
+
+        // Check if phone number is being changed and if it's already in use by another user
+        if (request.getPhoneNumber() != null &&
+            !request.getPhoneNumber().equals(user.getPhoneNumber()) &&
+            userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+            throw new RuntimeException("Phone number is already in use by another user");
+        }
+
+        // Update user fields
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setGender(request.getGender());
+        user.setAddress(request.getAddress());
+
+        user = userRepository.save(user);
+
+        log.info("User profile updated: {}", user.getEmail());
+        return user;
     }
 }

@@ -4,6 +4,7 @@ import com.medreserve.dto.JwtResponse;
 import com.medreserve.dto.LoginRequest;
 import com.medreserve.dto.MessageResponse;
 import com.medreserve.dto.SignupRequest;
+import com.medreserve.dto.UserProfileUpdateRequest;
 import com.medreserve.entity.User;
 import com.medreserve.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -75,6 +76,19 @@ public class AuthController {
     @Operation(summary = "Get current user", description = "Get current authenticated user details")
     public ResponseEntity<User> getCurrentUser(@AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(currentUser);
+    }
+
+    @PutMapping("/profile")
+    @Operation(summary = "Update user profile", description = "Update current user's profile information")
+    public ResponseEntity<User> updateProfile(
+            @Valid @RequestBody UserProfileUpdateRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        try {
+            User updatedUser = authService.updateUserProfile(currentUser.getId(), request);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PostMapping("/signout")
