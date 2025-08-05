@@ -103,6 +103,7 @@ public class DoctorService {
         return MessageResponse.success("Doctor registered successfully!");
     }
     
+    @Transactional(readOnly = true)
     public Page<DoctorResponse> getAllDoctors(Pageable pageable) {
         try {
             Page<Doctor> doctors = doctorRepository.findByIsAvailableTrue(pageable);
@@ -114,11 +115,13 @@ public class DoctorService {
         }
     }
     
+    @Transactional(readOnly = true)
     public Page<DoctorResponse> getDoctorsBySpecialty(String specialty, Pageable pageable) {
         Page<Doctor> doctors = doctorRepository.findBySpecialtyAndIsAvailableTrue(specialty, pageable);
         return doctors.map(this::convertToResponse);
     }
     
+    @Transactional(readOnly = true)
     public Page<DoctorResponse> searchDoctors(String keyword, Pageable pageable) {
         try {
             Page<Doctor> doctors = doctorRepository.searchDoctors(keyword, pageable);

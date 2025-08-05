@@ -24,6 +24,9 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns(
                     "https://med-reserve-ai.vercel.app",
                     "https://rishith2903.github.io",
+                    "https://medreserve-ai-backend.onrender.com",
+                    "https://*.vercel.app",
+                    "https://*.onrender.com",
                     "http://localhost:*",
                     "https://localhost:*"
                 )

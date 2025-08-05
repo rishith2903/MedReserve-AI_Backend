@@ -106,7 +106,9 @@ public class SecurityConfig {
                 "https://localhost:*",
                 "https://rishith2903.github.io",
                 "https://med-reserve-ai.vercel.app",
-                "https://*.vercel.app"  // Allow all Vercel apps temporarily
+                "https://medreserve-ai-backend.onrender.com",
+                "https://*.vercel.app",  // Allow all Vercel apps temporarily
+                "https://*.onrender.com"  // Allow all Render apps
             };
             System.out.println("CORS: Using fallback origins: " + Arrays.toString(fallbackOrigins));
             configuration.setAllowedOriginPatterns(Arrays.asList(fallbackOrigins));

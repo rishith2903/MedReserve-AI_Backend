@@ -23,6 +23,8 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     
     List<Doctor> findByIsAvailableTrue();
     
+    @Query(value = "SELECT d FROM Doctor d WHERE d.isAvailable = true",
+           countQuery = "SELECT COUNT(d) FROM Doctor d WHERE d.isAvailable = true")
     Page<Doctor> findByIsAvailableTrue(Pageable pageable);
     
     List<Doctor> findBySpecialty(String specialty);
@@ -31,7 +33,9 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     
     List<Doctor> findBySpecialtyAndIsAvailableTrue(String specialty);
     
-    Page<Doctor> findBySpecialtyAndIsAvailableTrue(String specialty, Pageable pageable);
+    @Query(value = "SELECT d FROM Doctor d WHERE d.specialty = :specialty AND d.isAvailable = true",
+           countQuery = "SELECT COUNT(d) FROM Doctor d WHERE d.specialty = :specialty AND d.isAvailable = true")
+    Page<Doctor> findBySpecialtyAndIsAvailableTrue(@Param("specialty") String specialty, Pageable pageable);
     
     @Query("SELECT DISTINCT d.specialty FROM Doctor d WHERE d.isAvailable = true ORDER BY d.specialty")
     List<String> findAllAvailableSpecialties();
@@ -41,9 +45,14 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
            "LOWER(d.user.lastName) LIKE LOWER(CONCAT('%', :name, '%'))")
     List<Doctor> findByNameContainingIgnoreCase(@Param("name") String name);
     
-    @Query("SELECT d FROM Doctor d WHERE d.isAvailable = true AND " +
-           "(LOWER(d.user.firstName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(d.user.lastName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+    @Query(value = "SELECT d FROM Doctor d JOIN d.user u WHERE d.isAvailable = true AND " +
+           "(LOWER(u.firstName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(d.specialty) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(d.subSpecialty) LIKE LOWER(CONCAT('%', :keyword, '%')))",
+           countQuery = "SELECT COUNT(d) FROM Doctor d JOIN d.user u WHERE d.isAvailable = true AND " +
+           "(LOWER(u.firstName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(d.specialty) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(d.subSpecialty) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Doctor> searchDoctors(@Param("keyword") String keyword, Pageable pageable);

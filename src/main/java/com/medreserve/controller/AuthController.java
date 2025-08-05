@@ -12,6 +12,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,12 +28,22 @@ public class AuthController {
     
     @PostMapping("/signin")
     @Operation(summary = "User login", description = "Authenticate user and return JWT tokens")
-    public ResponseEntity<JwtResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             JwtResponse jwtResponse = authService.authenticateUser(loginRequest);
             return ResponseEntity.ok(jwtResponse);
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.badRequest()
+                    .body(MessageResponse.error("Invalid email or password"));
+        } catch (DisabledException e) {
+            return ResponseEntity.badRequest()
+                    .body(MessageResponse.error("Account is disabled"));
+        } catch (LockedException e) {
+            return ResponseEntity.badRequest()
+                    .body(MessageResponse.error("Account is locked"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(MessageResponse.error("Authentication failed: " + e.getMessage()));
         }
     }
 
