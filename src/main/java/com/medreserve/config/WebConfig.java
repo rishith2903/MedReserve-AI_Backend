@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -16,6 +17,23 @@ public class WebConfig implements WebMvcConfigurer {
     
     private final RateLimitInterceptor rateLimitInterceptor;
     
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        // Global CORS configuration as backup
+        registry.addMapping("/**")
+                .allowedOriginPatterns(
+                    "https://med-reserve-ai.vercel.app",
+                    "https://rishith2903.github.io",
+                    "http://localhost:*",
+                    "https://localhost:*"
+                )
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+                .allowedHeaders("*")
+                .exposedHeaders("Authorization", "Content-Type")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(rateLimitInterceptor)

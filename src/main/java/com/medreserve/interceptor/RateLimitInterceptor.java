@@ -21,23 +21,28 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        
+
+        // Skip rate limiting for CORS preflight requests
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         // Get user identifier
         String userKey = getUserKey(request);
-        
+
         // Determine rate limit type based on endpoint
         RateLimitingConfig.RateLimitType limitType = determineLimitType(request.getRequestURI());
-        
+
         // Check rate limit
         if (!rateLimitingConfig.tryConsume(userKey, limitType)) {
             log.warn("Rate limit exceeded for user: {} on endpoint: {}", userKey, request.getRequestURI());
-            
+
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Rate limit exceeded. Please try again later.\",\"code\":\"RATE_LIMIT_EXCEEDED\"}");
             return false;
         }
-        
+
         return true;
     }
     
