@@ -40,9 +40,9 @@ services:
       - key: MAIL_PASSWORD
         sync: false
       - key: ML_SERVICE_URL
-        value: http://localhost:8001
+        value: https://medreserve-ml.onrender.com
       - key: CHATBOT_SERVICE_URL
-        value: http://localhost:5005
+        value: https://medreserve-chatbot.onrender.com
       - key: LOG_LEVEL
         value: INFO
       - key: SECURITY_LOG_LEVEL
