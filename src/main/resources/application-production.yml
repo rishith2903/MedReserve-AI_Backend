@@ -11,6 +11,11 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
+  # Disable H2 console in production
+  h2:
+    console:
+      enabled: false
+
   jpa:
     hibernate:
       ddl-auto: update
