@@ -1,47 +1,44 @@
-# ---------- Build Stage ----------
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy pom.xml and download dependencies (caching layer)
-COPY pom.xml .
-RUN mvn dependency:go-offline
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy full source code
-COPY src ./src
+# Upgrade pip and install wheel for better package compilation
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# Build the Spring Boot application, skip tests
-RUN mvn clean package -DskipTests
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
 
+# Install dependencies with verbose output for debugging
+RUN pip install --no-cache-dir --verbose -r requirements.txt
 
-# ---------- Runtime Stage ----------
-FROM openjdk:17-jdk-slim
+# Verify critical packages are installed
+RUN python -c "import jwt; print('✅ PyJWT installed successfully')" && \
+    python -c "import jose; print('✅ python-jose installed successfully')" && \
+    python -c "import fastapi; print('✅ FastAPI installed successfully')"
 
-# Set working directory
-WORKDIR /app
+# Copy application code
+COPY . .
 
-# Create non-root user for better security
-RUN groupadd -r chatbot && useradd -r -g chatbot chatbot
+# Create necessary directories
+RUN mkdir -p logs uploads data models
 
-# Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-
-# Copy the built JAR from build stage
-COPY --from=build /app/target/medreserve-chatbot.jar app.jar
-
-# Change ownership to non-root user
-RUN chown chatbot:chatbot app.jar
-
-# Switch to non-root user
+# Create non-root user for security
+RUN useradd -m -u 1000 chatbot && chown -R chatbot:chatbot /app
 USER chatbot
 
-# Expose port (uses PORT env var, defaults to 8080 in production)
-EXPOSE 8080
+# Expose port
+EXPOSE 8001
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-8080}/actuator/health || exit 1
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
 
 # Run the application
-CMD ["java", "-jar", "app.jar"]
+CMD ["python", "main.py"]

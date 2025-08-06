@@ -49,12 +49,22 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "User login (alias)", description = "Authenticate user and return JWT tokens - alias for /signin")
-    public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             JwtResponse jwtResponse = authService.authenticateUser(loginRequest);
             return ResponseEntity.ok(jwtResponse);
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.badRequest()
+                    .body(MessageResponse.error("Invalid email or password"));
+        } catch (DisabledException e) {
+            return ResponseEntity.badRequest()
+                    .body(MessageResponse.error("Account is disabled"));
+        } catch (LockedException e) {
+            return ResponseEntity.badRequest()
+                    .body(MessageResponse.error("Account is locked"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(MessageResponse.error("Authentication failed: " + e.getMessage()));
         }
     }
     

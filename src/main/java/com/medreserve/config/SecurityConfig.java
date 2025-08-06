@@ -56,26 +56,60 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // RESTORED PROPER SECURITY - 403 issue was path mismatch, not security
-                // Public endpoints (corrected paths without /api prefix)
+                // Public authentication endpoints
                 .requestMatchers("/auth/login", "/auth/signup", "/auth/refresh", "/auth/signin").permitAll()
+
+                // Public documentation and health endpoints
                 .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/actuator/**", "/health/**").permitAll()
                 .requestMatchers("/test/**", "/debug/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
-                // Public doctor endpoints (corrected paths)
-                .requestMatchers("/doctors/specialties", "/doctors/search", "/doctors", "/doctors/*").permitAll()
-                .requestMatchers("/doctors/specialty/*", "/doctors/filter/**", "/doctors/top-rated").permitAll()
-                // Public smart features endpoints
-                .requestMatchers("/smart-features/conditions/*").permitAll()
 
-                // Role-based access
+                // Public doctor endpoints - FIXED: More specific patterns first
+                .requestMatchers("/doctors/specialties").permitAll()
+                .requestMatchers("/doctors/search").permitAll()
+                .requestMatchers("/doctors/specialty/**").permitAll()
+                .requestMatchers("/doctors/filter/**").permitAll()
+                .requestMatchers("/doctors/top-rated").permitAll()
+                .requestMatchers("/doctors/{id}").permitAll()  // Get doctor by ID
+                .requestMatchers("/doctors").permitAll()  // Get all doctors - moved after specific patterns
+
+                // Public smart features endpoints
+                .requestMatchers("/smart-features/conditions/**").permitAll()
+                .requestMatchers("/smart-features/**").permitAll()
+
+                // Public health tips and medicines endpoints
+                .requestMatchers("/health-tips/**").permitAll()
+                .requestMatchers("/medicines/**").permitAll()
+                .requestMatchers("/prescriptions/search").permitAll()
+
+                // Public appointment slots (no auth needed to check availability)
+                .requestMatchers("/appointments/doctor/*/available-slots").permitAll()
+
+                // Role-based access for admin functions
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "MASTER_ADMIN")
                 .requestMatchers("/master-admin/**").hasRole("MASTER_ADMIN")
-                .requestMatchers("/doctor/**").hasRole("DOCTOR")
-                .requestMatchers("/patient/**").hasRole("PATIENT")
 
-                // Authenticated endpoints
+                // Doctor-specific endpoints
+                .requestMatchers("/doctor/**").hasRole("DOCTOR")
+                .requestMatchers("/doctors/register").hasAnyRole("ADMIN", "MASTER_ADMIN")
+                .requestMatchers("/doctors/my-profile").hasRole("DOCTOR")
+                .requestMatchers("/doctors/*/toggle-availability").hasRole("DOCTOR")
+                .requestMatchers("/appointments/doctor/my-appointments").hasRole("DOCTOR")
+
+                // Patient-specific endpoints
+                .requestMatchers("/patient/**").hasRole("PATIENT")
+                .requestMatchers("/appointments/book").hasRole("PATIENT")
+                .requestMatchers("/appointments/patient/my-appointments").hasRole("PATIENT")
+                .requestMatchers("/appointments/*/reschedule").hasAnyRole("PATIENT", "DOCTOR")
+                .requestMatchers("/appointments/*/cancel").hasAnyRole("PATIENT", "DOCTOR")
+                .requestMatchers("/appointments/*").hasAnyRole("PATIENT", "DOCTOR")
+
+                // Medical records - require authentication
+                .requestMatchers("/medical-reports/**").authenticated()
+                .requestMatchers("/prescriptions/**").authenticated()
+
+                // All other endpoints require authentication
                 .anyRequest().authenticated()
             );
         
