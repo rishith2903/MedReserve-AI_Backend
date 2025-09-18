@@ -62,11 +62,11 @@ jwt:
 # External Services Configuration
 ml:
   service:
-    url: ${ML_SERVICE_URL:http://localhost:8001}
+    url: ${ML_SERVICE_URL:https://medreserve-ml.onrender.com}
 
 chatbot:
   service:
-    url: ${CHATBOT_SERVICE_URL:http://localhost:8002}
+    url: ${CHATBOT_SERVICE_URL:https://medreserve-chatbot.onrender.com}
   # Multilingual Dialogflow Configuration
   supported-languages:
     - en
