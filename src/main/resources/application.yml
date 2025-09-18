@@ -7,8 +7,8 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:default}
 
   datasource:
-    url: ${DB_URL:jdbc:h2:mem:medreserve;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
-    username: ${DB_USERNAME:sa}
+    url: ${DB_URL:jdbc:postgresql://aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require}
+    username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:}
     # Spring Boot auto-detects driver from URL
 
@@ -19,13 +19,13 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: ${DDL_AUTO:create-drop}
+      ddl-auto: ${DDL_AUTO:update}
     show-sql: ${SHOW_SQL:false}
     open-in-view: false
     properties:
       hibernate:
         format_sql: true
-        # Spring Boot auto-detects dialect from driver
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   jackson:
     serialization:
@@ -55,7 +55,7 @@ server:
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
+  secret: ${JWT_SECRET:}
   expiration: ${JWT_EXPIRATION:86400000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
