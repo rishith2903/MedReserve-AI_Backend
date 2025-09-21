@@ -32,9 +32,9 @@ public interface MedicalReportRepository extends JpaRepository<MedicalReport, Lo
                                                  @Param("startDate") LocalDateTime startDate,
                                                  @Param("endDate") LocalDateTime endDate);
     
-    @Query("SELECT mr FROM MedicalReport mr WHERE mr.patient.id = :patientId AND " +
+    @Query("SELECT mr FROM MedicalReport mr WHERE mr.patient.id = :patientId AND (" +
            "LOWER(mr.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(mr.description) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+           "LOWER(mr.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<MedicalReport> searchByPatientAndKeyword(@Param("patientId") Long patientId,
                                                  @Param("keyword") String keyword);
     

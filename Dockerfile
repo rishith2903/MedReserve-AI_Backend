@@ -40,7 +40,7 @@ USER medreserve
 EXPOSE 8080
 
 # Health check to validate container is alive
-HEALTHCHECK CMD curl -f http://localhost:8080/api/actuator/health || exit 1
+HEALTHCHECK CMD curl -f http://localhost:8080/actuator/health || exit 1
 
 # Run the Spring Boot app with support for Render's dynamic port
 ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT:-8080}"]

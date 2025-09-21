@@ -153,8 +153,10 @@ public class AppointmentService {
         LocalDateTime dateTime = date.atStartOfDay();
         
         // Get existing appointments for the day
+        LocalDateTime dayStart = date.atStartOfDay();
+        LocalDateTime dayEnd = dayStart.plusDays(1);
         List<Appointment> existingAppointments = appointmentRepository
-                .findDoctorAppointmentsByDate(doctorId, dateTime);
+                .findDoctorAppointmentsByDateRange(doctorId, dayStart, dayEnd);
         
         // Generate morning slots
         if (doctor.getMorningStartTime() != null && doctor.getMorningEndTime() != null) {

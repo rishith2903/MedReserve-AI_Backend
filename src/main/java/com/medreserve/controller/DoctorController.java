@@ -141,7 +141,7 @@ public class DoctorController {
     }
     
     @PutMapping("/{doctorId}")
-    @PreAuthorize("hasRole('DOCTOR')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MASTER_ADMIN') or (hasRole('DOCTOR') and @authzService.isSelfDoctorId(#doctorId))")
     @Operation(summary = "Update doctor profile", description = "Update doctor profile information")
     public ResponseEntity<DoctorResponse> updateDoctorProfile(
             @PathVariable Long doctorId,
@@ -152,7 +152,7 @@ public class DoctorController {
     }
     
     @PutMapping("/{doctorId}/toggle-availability")
-    @PreAuthorize("hasRole('DOCTOR')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MASTER_ADMIN') or (hasRole('DOCTOR') and @authzService.isSelfDoctorId(#doctorId))")
     @Operation(summary = "Toggle availability", description = "Toggle doctor availability status")
     public ResponseEntity<MessageResponse> toggleAvailability(
             @PathVariable Long doctorId,

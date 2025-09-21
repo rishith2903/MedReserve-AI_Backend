@@ -476,7 +476,7 @@ git push heroku main
 - `POST /api/auth/signout` - User logout
 
 ### Health Check
-- `GET /api/actuator/health` - Application health status
+- `GET /actuator/health` - Application health status
 
 ## 📁 Project Structure
 

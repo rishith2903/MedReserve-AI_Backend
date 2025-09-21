@@ -19,22 +19,7 @@ public class WebConfig implements WebMvcConfigurer {
     
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        // Global CORS configuration as backup
-        registry.addMapping("/**")
-                .allowedOriginPatterns(
-                    "https://med-reserve-ai.vercel.app",
-                    "https://rishith2903.github.io",
-                    "https://medreserve-ai-backend.onrender.com",
-                    "https://*.vercel.app",
-                    "https://*.onrender.com",
-                    "http://localhost:*",
-                    "https://localhost:*"
-                )
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                .allowedHeaders("*")
-                .exposedHeaders("Authorization", "Content-Type")
-                .allowCredentials(true)
-                .maxAge(3600);
+        // CORS is configured via SecurityConfig.cors; no additional mappings here to avoid duplication.
     }
 
     @Override

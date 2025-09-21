@@ -2,11 +2,15 @@ package com.medreserve.security;
 
 import com.medreserve.entity.Role;
 import com.medreserve.entity.User;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,8 +22,9 @@ class JwtUtilsTest {
     
     @BeforeEach
     void setUp() {
-        jwtUtils = new JwtUtils();
-        ReflectionTestUtils.setField(jwtUtils, "jwtSecret", "mySecretKey123456789012345678901234567890");
+        String secret = "mySecretKey123456789012345678901234567890"; // >=32 bytes
+        SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        jwtUtils = new JwtUtils(key);
         ReflectionTestUtils.setField(jwtUtils, "jwtExpirationMs", 86400000);
         ReflectionTestUtils.setField(jwtUtils, "jwtRefreshExpirationMs", 604800000);
         

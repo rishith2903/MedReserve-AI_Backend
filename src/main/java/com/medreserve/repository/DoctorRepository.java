@@ -40,9 +40,9 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     @Query("SELECT DISTINCT d.specialty FROM Doctor d WHERE d.isAvailable = true ORDER BY d.specialty")
     List<String> findAllAvailableSpecialties();
     
-    @Query("SELECT d FROM Doctor d WHERE d.isAvailable = true AND " +
+    @Query("SELECT d FROM Doctor d WHERE d.isAvailable = true AND (" +
            "LOWER(d.user.firstName) LIKE LOWER(CONCAT('%', :name, '%')) OR " +
-           "LOWER(d.user.lastName) LIKE LOWER(CONCAT('%', :name, '%'))")
+           "LOWER(d.user.lastName) LIKE LOWER(CONCAT('%', :name, '%')))")
     List<Doctor> findByNameContainingIgnoreCase(@Param("name") String name);
     
     @Query(value = "SELECT d FROM Doctor d JOIN d.user u WHERE d.isAvailable = true AND " +

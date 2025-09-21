@@ -1,7 +1,6 @@
 package com.medreserve.security;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -16,19 +15,18 @@ import java.util.Map;
 @Component
 @Slf4j
 public class JwtUtils {
-    
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+
+    private final SecretKey signingKey;
+
+    public JwtUtils(SecretKey signingKey) {
+        this.signingKey = signingKey;
+    }
     
     @Value("${jwt.expiration}")
     private int jwtExpirationMs;
     
     @Value("${jwt.refresh-expiration}")
     private int jwtRefreshExpirationMs;
-    
-    private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
-    }
     
     public String generateJwtToken(Authentication authentication) {
         UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
@@ -51,13 +49,13 @@ public class JwtUtils {
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .signWith(signingKey, SignatureAlgorithm.HS256)
                 .compact();
     }
     
     public String getUserNameFromJwtToken(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(signingKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
@@ -67,7 +65,7 @@ public class JwtUtils {
     public boolean validateJwtToken(String authToken) {
         try {
             Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(signingKey)
                 .build()
                 .parseClaimsJws(authToken);
             return true;
@@ -85,7 +83,7 @@ public class JwtUtils {
     
     public Date getExpirationDateFromToken(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(signingKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody()

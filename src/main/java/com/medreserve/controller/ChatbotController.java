@@ -89,7 +89,6 @@ public class ChatbotController {
      * Handles multilingual webhook requests from Dialogflow CX/ES agents
      */
     @PostMapping("/webhook")
-    @CrossOrigin("*")
     @Operation(summary = "Dialogflow webhook", description = "Webhook endpoint for Dialogflow CX/ES agents with multilingual support")
     public ResponseEntity<Map<String, Object>> handleDialogflowWebhook(@RequestBody Map<String, Object> request) {
         try {

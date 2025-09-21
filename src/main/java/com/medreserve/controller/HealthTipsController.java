@@ -14,7 +14,6 @@ import java.util.Map;
 @RequestMapping("/health-tips")
 @RequiredArgsConstructor
 @Tag(name = "Health Tips", description = "Health tips and wellness advice")
-@CrossOrigin(origins = "*")
 public class HealthTipsController {
 
     @GetMapping

@@ -59,7 +59,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     void markMessagesAsRead(@Param("messageIds") List<Long> messageIds, @Param("readAt") LocalDateTime readAt);
     
     @Modifying
-    @Query("UPDATE ChatMessage cm SET cm.status = 'READ', cm.readAt = :readAt WHERE cm.chatSession.id = :chatSessionId AND cm.sender.id != :userId AND cm.status != 'read'")
+    @Query("UPDATE ChatMessage cm SET cm.status = 'READ', cm.readAt = :readAt WHERE cm.chatSession.id = :chatSessionId AND cm.sender.id != :userId AND cm.status != 'READ'")
     void markAllMessagesAsRead(@Param("chatSessionId") Long chatSessionId, @Param("userId") Long userId, @Param("readAt") LocalDateTime readAt);
     
     @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatSession.id = :chatSessionId ORDER BY cm.sentAt DESC")

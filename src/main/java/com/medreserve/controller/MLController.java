@@ -25,7 +25,6 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Machine Learning", description = "ML-powered medical analysis APIs")
-@CrossOrigin(origins = "*")
 public class MLController {
 
     private final MLService mlService;

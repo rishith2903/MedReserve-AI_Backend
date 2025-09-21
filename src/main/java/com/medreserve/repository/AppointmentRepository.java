@@ -46,18 +46,27 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
                                                           @Param("excludeAppointmentId") Long excludeAppointmentId);
     
     @Query("SELECT a FROM Appointment a WHERE a.doctor.id = :doctorId AND " +
-           "DATE(a.appointmentDateTime) = DATE(:date) AND " +
+           "a.appointmentDateTime >= :start AND a.appointmentDateTime < :end AND " +
            "a.status IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS') " +
            "ORDER BY a.appointmentDateTime")
-    List<Appointment> findDoctorAppointmentsByDate(@Param("doctorId") Long doctorId,
-                                                  @Param("date") LocalDateTime date);
+    List<Appointment> findDoctorAppointmentsByDateRange(@Param("doctorId") Long doctorId,
+                                                       @Param("start") LocalDateTime start,
+                                                       @Param("end") LocalDateTime end);
+    
+    // Convenience method for tests and service usage by single date
+    default List<Appointment> findDoctorAppointmentsByDate(Long doctorId, java.time.LocalDate date) {
+        java.time.LocalDateTime start = date.atStartOfDay();
+        java.time.LocalDateTime end = date.plusDays(1).atStartOfDay();
+        return findDoctorAppointmentsByDateRange(doctorId, start, end);
+    }
     
     @Query("SELECT a FROM Appointment a WHERE a.patient.id = :patientId AND " +
-           "DATE(a.appointmentDateTime) = DATE(:date) AND " +
+           "a.appointmentDateTime >= :start AND a.appointmentDateTime < :end AND " +
            "a.status IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS') " +
            "ORDER BY a.appointmentDateTime")
-    List<Appointment> findPatientAppointmentsByDate(@Param("patientId") Long patientId,
-                                                   @Param("date") LocalDateTime date);
+    List<Appointment> findPatientAppointmentsByDateRange(@Param("patientId") Long patientId,
+                                                        @Param("start") LocalDateTime start,
+                                                        @Param("end") LocalDateTime end);
     
     @Query("SELECT a FROM Appointment a WHERE " +
            "a.appointmentDateTime BETWEEN :startDate AND :endDate AND " +

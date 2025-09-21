@@ -20,6 +20,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Arrays;
 
@@ -27,10 +30,14 @@ import java.util.Arrays;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
     
     private final UserDetailsServiceImpl userDetailsService;
     private final AuthTokenFilter authTokenFilter;
+
+    @Value("${app.cors.allowed-origins:http://localhost:3000}")
+    private String allowedOriginsProperty;
     
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -61,18 +68,27 @@ public class SecurityConfig {
 
                 // Public documentation and health endpoints
                 .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/actuator/**", "/health/**").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/test/**", "/debug/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
 
-                // Public doctor endpoints - FIXED: More specific patterns first
+                // Public READ endpoints for ML/Chatbot metadata and health
+                .requestMatchers("/ml/health", "/ml/specialties").permitAll()
+                .requestMatchers("/chatbot/health", "/chatbot/intents").permitAll()
+
+                // Public doctor endpoints - Specific patterns first
                 .requestMatchers("/doctors/specialties").permitAll()
                 .requestMatchers("/doctors/search").permitAll()
                 .requestMatchers("/doctors/specialty/**").permitAll()
                 .requestMatchers("/doctors/filter/**").permitAll()
                 .requestMatchers("/doctors/top-rated").permitAll()
-                .requestMatchers("/doctors/{id}").permitAll()  // Get doctor by ID
-                .requestMatchers("/doctors").permitAll()  // Get all doctors - moved after specific patterns
+                // Restricted doctor endpoints must come before the general GET matcher
+                .requestMatchers("/doctors/register").hasAnyRole("ADMIN", "MASTER_ADMIN")
+                .requestMatchers("/doctors/my-profile").hasRole("DOCTOR")
+                .requestMatchers("/doctors/*/toggle-availability").hasRole("DOCTOR")
+                // Permit GET access to single doctor resource and list
+                .requestMatchers(HttpMethod.GET, "/doctors/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/doctors").permitAll()
 
                 // Public smart features endpoints
                 .requestMatchers("/smart-features/conditions/**").permitAll()
@@ -92,9 +108,6 @@ public class SecurityConfig {
 
                 // Doctor-specific endpoints
                 .requestMatchers("/doctor/**").hasRole("DOCTOR")
-                .requestMatchers("/doctors/register").hasAnyRole("ADMIN", "MASTER_ADMIN")
-                .requestMatchers("/doctors/my-profile").hasRole("DOCTOR")
-                .requestMatchers("/doctors/*/toggle-availability").hasRole("DOCTOR")
                 .requestMatchers("/appointments/doctor/my-appointments").hasRole("DOCTOR")
 
                 // Patient-specific endpoints
@@ -123,40 +136,24 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Get allowed origins from environment variable, fallback includes production frontend
-        String allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
-        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
-            String[] origins = allowedOrigins.split(",");
-            // Trim whitespace from each origin
-            for (int i = 0; i < origins.length; i++) {
-                origins[i] = origins[i].trim();
-            }
-            System.out.println("CORS: Using environment variable origins: " + Arrays.toString(origins));
-            configuration.setAllowedOriginPatterns(Arrays.asList(origins));
-        } else {
-            // Fallback includes both development and production origins
-            String[] fallbackOrigins = {
-                "http://localhost:*",
-                "https://localhost:*",
-                "https://rishith2903.github.io",
-                "https://med-reserve-ai.vercel.app",
-                "https://medreserve-ai-backend.onrender.com",
-                "https://*.vercel.app",  // Allow all Vercel apps temporarily
-                "https://*.onrender.com"  // Allow all Render apps
-            };
-            System.out.println("CORS: Using fallback origins: " + Arrays.toString(fallbackOrigins));
-            configuration.setAllowedOriginPatterns(Arrays.asList(fallbackOrigins));
+        // Prefer property app.cors.allowed-origins (comma-separated). Fallback to CORS_ALLOWED_ORIGINS env if set.
+        String effective = allowedOriginsProperty;
+        String envOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
+        if (envOrigins != null && !envOrigins.isEmpty()) {
+            effective = envOrigins;
         }
+        String[] origins = Arrays.stream(effective.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toArray(String[]::new);
+        log.info("CORS: Allowed origins: {}", Arrays.toString(origins));
+        configuration.setAllowedOriginPatterns(Arrays.asList(origins));
 
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L); // Cache preflight response for 1 hour
-
-        System.out.println("CORS: Configuration completed with methods: " + configuration.getAllowedMethods());
-        System.out.println("CORS: Allowed headers: " + configuration.getAllowedHeaders());
-        System.out.println("CORS: Allow credentials: " + configuration.getAllowCredentials());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

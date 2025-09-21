@@ -49,9 +49,12 @@ server:
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:}
   expiration: ${JWT_EXPIRATION:86400000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:gecLMhvVBk1Y2TpF22ns6mYNo7YpS0hL0H9TK6E2Zb9RUNTe1zz4N25q5+JSvdKaf99M2ta53M9/aN7PCFg2eg==}
 
 # External Services Configuration
 ml:
@@ -69,6 +72,12 @@ chatbot:
   default-language: en
   debug-mode: ${CHATBOT_DEBUG_MODE:false}
 
+# HTTP client defaults (used by RestTemplate)
+http:
+  client:
+    connect-timeout-ms: ${HTTP_CLIENT_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${HTTP_CLIENT_READ_TIMEOUT_MS:10000}
+
 disease:
   prediction:
     service:
@@ -76,12 +85,31 @@ disease:
     fallback:
       enabled: ${DISEASE_PREDICTION_FALLBACK_ENABLED:true}
 
-# CORS Configuration
+# CORS Configuration (legacy)
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:https://med-reserve-ai.vercel.app,https://rishith2903.github.io,http://localhost:3000,http://localhost:3001,http://localhost:5173}
+
+# App-level CORS configuration
+app:
+  cors:
+    allowed-origins: ${FRONTEND_ORIGINS:http://localhost:3000}
 
 logging:
   level:
     root: INFO
     org.springframework.web: DEBUG
     org.hibernate: ERROR
+
+# Actuator configuration for dev/default
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  health:
+    mail:
+      enabled: false
