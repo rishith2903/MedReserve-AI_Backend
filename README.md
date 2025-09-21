@@ -1,5 +1,6 @@
 # 🏥 MedReserve — Backend (Spring Boot)
 
+[![CI](https://github.com/rishith2903/MedReserve-AI_Backend/actions/workflows/ci.yml/badge.svg)](https://github.com/rishith2903/MedReserve-AI_Backend/actions)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://openjdk.java.net/projects/jdk/17/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Maven](https://img.shields.io/badge/Maven-3.9+-blue.svg)](https://maven.apache.org/)
@@ -29,6 +30,8 @@ See overall architecture diagram: [../docs/architecture.mmd](../docs/architectur
 - PostgreSQL (for production) or H2 (dev)
 
 ## 🚀 Run
+
+OS-specific quick reference: see the root README section “OS-specific instructions”.
 
 Windows (PowerShell)
 ```
