@@ -92,7 +92,7 @@ cors:
 # App-level CORS configuration
 app:
   cors:
-    allowed-origins: ${FRONTEND_ORIGINS:http://localhost:3000}
+    allowed-origins: ${FRONTEND_ORIGINS:http://localhost:3000,https://med-reserve-ai.vercel.app}
 
 logging:
   level:
