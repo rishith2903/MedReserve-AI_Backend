@@ -55,3 +55,24 @@ Notes / Observations
 - Use JWT secrets >= 32 bytes (HS256); suggest generation via: openssl rand -base64 48
 - Prefer app.cors.allowed-origins (FRONTEND_ORIGINS env) for CORS; avoid legacy cors.allowed-origins property
 - Keep actuator on service port for Render health checks
+
+## Tooling versions (captured)
+### Java
+java : java version "24.0.2" 2025-07-15
+At line:1 char:2
++ (java -version) 2>&1 | Out-String | Add-Content -Path "backend\docs\b ...
++  ~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (java version "24.0.2" 2025-07-15:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Java(TM) SE Runtime Environment (build 24.0.2+12-54)
+Java HotSpot(TM) 64-Bit Server VM (build 24.0.2+12-54, mixed mode, sharing)
+
+
+### Maven
+Apache Maven 3.9.11 (3e54c93a704957b63ee3494413a2b544fd3d825b)
+Maven home: C:\Users\sai sumanth\apache-maven-3.9.11-bin\apache-maven-3.9.11
+Java version: 24.0.2, vendor: Oracle Corporation, runtime: C:\Program Files\Java\jdk-24
+Default locale: en_IN, platform encoding: UTF-8
+OS name: "windows 11", version: "10.0", arch: "amd64", family: "windows"
+
