@@ -95,6 +95,11 @@ public class PrescriptionService {
             prescription.setFilePath(filePath);
             prescription.setFileSize(file.getSize());
             prescription.setContentType(file.getContentType());
+            // Compute checksum for auditing/integrity
+            try {
+                String checksum = fileStorageService.calculateChecksum("prescriptions", fileName);
+                prescription.setSha256Checksum(checksum);
+            } catch (Exception ignored) { }
             
             prescription = prescriptionRepository.save(prescription);
             
@@ -160,6 +165,7 @@ public class PrescriptionService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Prescription has no file attachment");
         }
         
+        log.info("Prescription download: prescriptionId={}, requestedByUserId={}", prescriptionId, userId);
         return fileStorageService.loadFileAsResource(prescription.getFileName(), "prescriptions");
     }
     
@@ -248,6 +254,7 @@ public class PrescriptionService {
         response.setOriginalFileName(prescription.getOriginalFileName());
         response.setFileSize(prescription.getFileSize());
         response.setContentType(prescription.getContentType());
+        response.setSha256Checksum(prescription.getSha256Checksum());
         response.setPrescriptionDate(prescription.getPrescriptionDate());
         response.setValidUntil(prescription.getValidUntil());
         response.setStatus(prescription.getStatus());

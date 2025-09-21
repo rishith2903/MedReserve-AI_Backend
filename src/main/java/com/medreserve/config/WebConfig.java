@@ -24,28 +24,16 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // TEMPORARILY DISABLED: Rate limiter still causing issues
-        // Will re-enable after confirming all endpoints work
-        /*
         registry.addInterceptor(rateLimitInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(
-                        "/auth/login",
-                        "/auth/signup",
-                        "/auth/refresh",
-                        "/auth/signin",
-                        "/auth/**",
+                        // Allow actuator and documentation without rate limiting
                         "/actuator/**",
-                        "/test/**",
-                        "/debug/**",
-                        "/doctors/specialties",
-                        "/doctors/search",
-                        "/doctors",
-                        "/doctors/*",
-                        "/smart-features/conditions/*",
                         "/swagger-ui/**",
-                        "/api-docs/**"
+                        "/api-docs/**",
+                        "/v3/api-docs/**",
+                        // H2 console (dev-only)
+                        "/h2-console/**"
                 );
-        */
     }
 }

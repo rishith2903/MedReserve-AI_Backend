@@ -76,7 +76,9 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         // Remove context path for consistent matching
         String normalizedURI = requestURI.startsWith("/api/") ? requestURI.substring(4) : requestURI;
 
-        if (normalizedURI.contains("/ml/")) {
+        if (normalizedURI.startsWith("/auth/login") || normalizedURI.startsWith("/auth/signin")) {
+            return RateLimitingConfig.RateLimitType.LOGIN;
+        } else if (normalizedURI.contains("/ml/")) {
             return RateLimitingConfig.RateLimitType.ML_PREDICTION;
         } else if (normalizedURI.contains("/chatbot/")) {
             return RateLimitingConfig.RateLimitType.CHAT;

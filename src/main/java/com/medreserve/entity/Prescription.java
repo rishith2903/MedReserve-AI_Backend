@@ -63,6 +63,9 @@ public class Prescription {
     @Column(name = "content_type")
     private String contentType;
     
+    @Column(name = "sha256_checksum", length = 64)
+    private String sha256Checksum;
+    
     @Column(name = "prescription_date", nullable = false)
     private LocalDateTime prescriptionDate;
     

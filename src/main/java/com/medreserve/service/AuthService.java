@@ -5,6 +5,7 @@ import com.medreserve.dto.LoginRequest;
 import com.medreserve.dto.MessageResponse;
 import com.medreserve.dto.SignupRequest;
 import com.medreserve.dto.UserProfileUpdateRequest;
+import com.medreserve.dto.ChangePasswordRequest;
 import com.medreserve.entity.Role;
 import com.medreserve.entity.User;
 import com.medreserve.repository.RoleRepository;
@@ -12,6 +13,7 @@ import com.medreserve.repository.UserRepository;
 import com.medreserve.security.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -32,6 +34,9 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
+    
+    @Value("${app.auth.auto-verify-signup:true}")
+    private boolean autoVerifySignup;
     
     @Transactional
     public JwtResponse authenticateUser(LoginRequest loginRequest) {
@@ -84,11 +89,12 @@ public class AuthService {
         user.setAddress(signUpRequest.getAddress());
         user.setRole(userRole);
         user.setIsActive(true);
-        user.setEmailVerified(false); // In real app, send verification email
+        // Email verification policy (configurable)
+        user.setEmailVerified(autoVerifySignup);
         
         userRepository.save(user);
         
-        log.info("User registered successfully: {}", user.getEmail());
+        log.info("User registered successfully: id={}", user.getId());
         return MessageResponse.success("User registered successfully!");
     }
     
@@ -139,5 +145,26 @@ public class AuthService {
 
         log.info("User profile updated: {}", user.getEmail());
         return user;
+    }
+
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Verify current password
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        // Prevent using the same password
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("New password must be different from the current password");
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        log.info("Password changed for user: id={}", user.getId());
     }
 }

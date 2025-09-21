@@ -9,6 +9,8 @@ REST API that provides:
 Runs on http://localhost:5001 by default.
 
 ## 🚀 Quickstart
+
+OS-specific quick reference: see the root README section “OS-specific instructions”.
 ```
 cd backend/ml
 pip install -r requirements.txt

@@ -92,13 +92,32 @@ cors:
 # App-level CORS configuration
 app:
   cors:
-    allowed-origins: ${FRONTEND_ORIGINS:http://localhost:3000,https://med-reserve-ai.vercel.app}
+    allowed-origins: ${FRONTEND_ORIGINS:http://localhost:3000}
+  auth:
+    auto-verify-signup: ${AUTO_VERIFY_SIGNUP:true}
+  security:
+    hsts-enabled: ${HSTS_ENABLED:false}
+    login:
+      # Maximum number of failed login attempts before temporary lockout
+      max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
+      # Lockout window in milliseconds (default: 15 minutes)
+      lockout-ms: ${LOGIN_LOCKOUT_MS:900000}
+    ratelimit:
+      uploads:
+        # Max upload requests per minute per user
+        requests-per-minute: ${UPLOADS_REQUESTS_PER_MINUTE:10}
+    antivirus:
+      enabled: ${ANTIVIRUS_ENABLED:false}
+      host: ${ANTIVIRUS_HOST:127.0.0.1}
+      port: ${ANTIVIRUS_PORT:3310}
+      timeout-ms: ${ANTIVIRUS_TIMEOUT_MS:5000}
+      fail-open: ${ANTIVIRUS_FAIL_OPEN:true}
 
 logging:
   level:
     root: INFO
-    org.springframework.web: DEBUG
-    org.hibernate: ERROR
+    org.springframework.web: INFO
+    org.hibernate: WARN
 
 # Actuator configuration for dev/default
 management:

@@ -59,7 +59,7 @@ management:
       base-path: /actuator
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
 
 jwt:
   expiration: 86400000
@@ -74,6 +74,8 @@ cors:
 app:
   cors:
     allowed-origins: ${FRONTEND_ORIGINS}
+  security:
+    hsts-enabled: true
 
 logging:
   level:

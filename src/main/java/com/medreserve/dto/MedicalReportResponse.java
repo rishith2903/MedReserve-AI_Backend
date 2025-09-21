@@ -25,6 +25,7 @@ public class MedicalReportResponse {
     private String originalFileName;
     private Long fileSize;
     private String contentType;
+    private String sha256Checksum;
     private MedicalReport.ReportType reportType;
     
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm")

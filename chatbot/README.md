@@ -7,6 +7,8 @@ Dual AI assistants for Patients and Doctors with real-time chat via WebSocket.
 Runs on http://localhost:8001 by default.
 
 ## 🚀 Quickstart
+
+OS-specific quick reference: see the root README section “OS-specific instructions”.
 ```
 cd backend/chatbot
 pip install -r requirements.txt

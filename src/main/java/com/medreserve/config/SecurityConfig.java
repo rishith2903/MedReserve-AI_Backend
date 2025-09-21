@@ -2,7 +2,6 @@ package com.medreserve.config;
 
 import com.medreserve.security.AuthTokenFilter;
 import com.medreserve.service.UserDetailsServiceImpl;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,21 +22,29 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.http.HttpMethod;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 
 import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
-@RequiredArgsConstructor
 @Slf4j
 public class SecurityConfig {
     
     private final UserDetailsServiceImpl userDetailsService;
     private final AuthTokenFilter authTokenFilter;
 
+    public SecurityConfig(UserDetailsServiceImpl userDetailsService, AuthTokenFilter authTokenFilter) {
+        this.userDetailsService = userDetailsService;
+        this.authTokenFilter = authTokenFilter;
+    }
+
     @Value("${app.cors.allowed-origins:http://localhost:3000}")
     private String allowedOriginsProperty;
+
+    @Value("${app.security.hsts-enabled:false}")
+    private boolean hstsEnabled;
     
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -124,7 +131,17 @@ public class SecurityConfig {
 
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
-            );
+            )
+            // Security headers
+            .headers(headers -> {
+                headers.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'"));
+                headers.referrerPolicy(ref -> ref.policy(ReferrerPolicy.SAME_ORIGIN));
+                headers.frameOptions(frame -> frame.sameOrigin());
+                headers.permissionsPolicy(pp -> pp.policy("geolocation=(), microphone=(), camera=()"));
+                if (hstsEnabled) {
+                    headers.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000));
+                }
+            });
         
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);

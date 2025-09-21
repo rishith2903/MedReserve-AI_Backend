@@ -5,8 +5,10 @@ import com.medreserve.dto.LoginRequest;
 import com.medreserve.dto.MessageResponse;
 import com.medreserve.dto.SignupRequest;
 import com.medreserve.dto.UserProfileUpdateRequest;
+import com.medreserve.dto.ChangePasswordRequest;
 import com.medreserve.entity.User;
 import com.medreserve.service.AuthService;
+import com.medreserve.security.LoginAttemptService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,14 +27,22 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     
     private final AuthService authService;
+    private final LoginAttemptService loginAttemptService;
     
     @PostMapping("/signin")
     @Operation(summary = "User login", description = "Authenticate user and return JWT tokens")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        String key = loginRequest.getEmail();
+        if (loginAttemptService.isLocked(key)) {
+            return ResponseEntity.badRequest()
+                    .body(MessageResponse.error("Too many failed login attempts. Please try again later."));
+        }
         try {
             JwtResponse jwtResponse = authService.authenticateUser(loginRequest);
+            loginAttemptService.loginSucceeded(key);
             return ResponseEntity.ok(jwtResponse);
         } catch (BadCredentialsException e) {
+            loginAttemptService.loginFailed(key);
             return ResponseEntity.badRequest()
                     .body(MessageResponse.error("Invalid email or password"));
         } catch (DisabledException e) {
@@ -50,10 +60,17 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "User login (alias)", description = "Authenticate user and return JWT tokens - alias for /signin")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
+        String key = loginRequest.getEmail();
+        if (loginAttemptService.isLocked(key)) {
+            return ResponseEntity.badRequest()
+                    .body(MessageResponse.error("Too many failed login attempts. Please try again later."));
+        }
         try {
             JwtResponse jwtResponse = authService.authenticateUser(loginRequest);
+            loginAttemptService.loginSucceeded(key);
             return ResponseEntity.ok(jwtResponse);
         } catch (BadCredentialsException e) {
+            loginAttemptService.loginFailed(key);
             return ResponseEntity.badRequest()
                     .body(MessageResponse.error("Invalid email or password"));
         } catch (DisabledException e) {
@@ -80,7 +97,7 @@ public class AuthController {
             }
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(MessageResponse.error("Registration failed: " + e.getMessage()));
+                    .body(MessageResponse.error("Registration failed"));
         }
     }
     
@@ -111,6 +128,21 @@ public class AuthController {
             return ResponseEntity.ok(updatedUser);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/change-password")
+    @Operation(summary = "Change password", description = "Change current user's password")
+    public ResponseEntity<MessageResponse> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        try {
+            authService.changePassword(currentUser.getId(), request);
+            return ResponseEntity.ok(MessageResponse.success("Password changed successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(MessageResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(MessageResponse.error("Failed to change password"));
         }
     }
 

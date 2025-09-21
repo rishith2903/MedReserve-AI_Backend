@@ -9,8 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import com.medreserve.security.AntivirusScannerService;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,6 +21,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Formatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,6 +30,7 @@ import java.util.UUID;
 public class FileStorageService {
     
     private final Path fileStorageLocation;
+    private final AntivirusScannerService antivirusScannerService;
     
     // Allowed file types for medical reports
     private static final List<String> ALLOWED_REPORT_TYPES = Arrays.asList(
@@ -50,8 +54,10 @@ public class FileStorageService {
     // Maximum file size (10MB)
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
     
-    public FileStorageService(@Value("${file.upload-dir:./uploads}") String uploadDir) {
+    public FileStorageService(@Value("${file.upload-dir:./uploads}") String uploadDir,
+                               AntivirusScannerService antivirusScannerService) {
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
+        this.antivirusScannerService = antivirusScannerService;
         
         try {
             Files.createDirectories(this.fileStorageLocation);
@@ -148,8 +154,13 @@ public class FileStorageService {
                     "File size exceeds maximum allowed size of 10MB");
         }
         
-        String contentType = file.getContentType();
-        if (contentType == null || !allowedTypes.contains(contentType.toLowerCase())) {
+        // Prefer content-based detection; fall back to provided content-type header
+        String declaredContentType = file.getContentType();
+        String detectedContentType = detectMimeType(file);
+        boolean allowedByDetection = detectedContentType != null && allowedTypes.contains(detectedContentType.toLowerCase());
+        boolean allowedByHeader = declaredContentType != null && allowedTypes.contains(declaredContentType.toLowerCase());
+        
+        if (!allowedByDetection && !allowedByHeader) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
                     "File type not allowed. Allowed types: " + String.join(", ", allowedTypes));
         }
@@ -158,6 +169,9 @@ public class FileStorageService {
         if (originalFileName == null || originalFileName.trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File name is required");
         }
+        
+        // Optional antivirus scan (feature-flagged)
+        antivirusScannerService.assertClean(file);
     }
     
     private String getFileExtension(String fileName) {
@@ -165,6 +179,72 @@ public class FileStorageService {
             return fileName.substring(fileName.lastIndexOf("."));
         }
         return "";
+    }
+
+    private String detectMimeType(MultipartFile file) {
+        try (InputStream is = file.getInputStream()) {
+            byte[] header = new byte[16];
+            int read = is.read(header);
+            if (read <= 0) return null;
+
+            // PDF: 25 50 44 46 2D => %PDF-
+            if (read >= 5 && header[0] == 0x25 && header[1] == 0x50 && header[2] == 0x44 && header[3] == 0x46 && header[4] == 0x2D) {
+                return "application/pdf";
+            }
+            // JPEG: FF D8 FF
+            if (read >= 3 && (header[0] & 0xFF) == 0xFF && (header[1] & 0xFF) == 0xD8 && (header[2] & 0xFF) == 0xFF) {
+                return "image/jpeg";
+            }
+            // PNG: 89 50 4E 47 0D 0A 1A 0A
+            if (read >= 8 && (header[0] & 0xFF) == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47 &&
+                    header[4] == 0x0D && header[5] == 0x0A && header[6] == 0x1A && header[7] == 0x0A) {
+                return "image/png";
+            }
+            // GIF: GIF87a or GIF89a
+            if (read >= 6 && header[0] == 'G' && header[1] == 'I' && header[2] == 'F' && header[3] == '8' &&
+                    (header[4] == '7' || header[4] == '9') && header[5] == 'a') {
+                return "image/gif";
+            }
+            // BMP: 42 4D (BM)
+            if (read >= 2 && header[0] == 'B' && header[1] == 'M') {
+                return "image/bmp";
+            }
+            // TIFF: II*\0 or MM\0*
+            if (read >= 4 && ((header[0] == 'I' && header[1] == 'I' && header[2] == 0x2A && header[3] == 0x00) ||
+                    (header[0] == 'M' && header[1] == 'M' && header[2] == 0x00 && header[3] == 0x2A))) {
+                return "image/tiff";
+            }
+        } catch (IOException e) {
+            log.warn("Could not detect MIME type by magic bytes: {}", e.getMessage());
+        }
+        return null;
+    }
+    
+    public String calculateChecksum(String category, String fileName) {
+        try {
+            Path categoryPath = this.fileStorageLocation.resolve(category);
+            Path filePath = categoryPath.resolve(fileName).normalize();
+            if (!Files.exists(filePath)) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found " + fileName);
+            }
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            try (InputStream is = Files.newInputStream(filePath)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = is.read(buffer)) != -1) {
+                    md.update(buffer, 0, read);
+                }
+            }
+            byte[] digest = md.digest();
+            StringBuilder sb = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            log.warn("Failed to compute checksum for {} in {}: {}", fileName, category, e.getMessage());
+            return null;
+        }
     }
     
     public boolean isValidReportFile(MultipartFile file) {

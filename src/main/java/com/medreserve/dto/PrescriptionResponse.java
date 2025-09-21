@@ -32,6 +32,7 @@ public class PrescriptionResponse {
     private String originalFileName;
     private Long fileSize;
     private String contentType;
+    private String sha256Checksum;
     
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     private LocalDateTime prescriptionDate;

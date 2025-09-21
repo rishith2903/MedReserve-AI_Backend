@@ -21,6 +21,7 @@ public class RateLimitingConfig {
     private static final int ML_REQUESTS_PER_MINUTE = 10;
     private static final int CHAT_REQUESTS_PER_MINUTE = 30;
     private static final int FILE_UPLOAD_REQUESTS_PER_MINUTE = 5;
+    private static final int LOGIN_REQUESTS_PER_MINUTE = 10; // brute-force protection
     
     public Bucket createNewBucket(RateLimitType type) {
         return switch (type) {
@@ -35,6 +36,9 @@ public class RateLimitingConfig {
                     .build();
             case FILE_UPLOAD -> Bucket.builder()
                     .addLimit(Bandwidth.classic(FILE_UPLOAD_REQUESTS_PER_MINUTE, Refill.intervally(FILE_UPLOAD_REQUESTS_PER_MINUTE, Duration.ofMinutes(1))))
+                    .build();
+            case LOGIN -> Bucket.builder()
+                    .addLimit(Bandwidth.classic(LOGIN_REQUESTS_PER_MINUTE, Refill.intervally(LOGIN_REQUESTS_PER_MINUTE, Duration.ofMinutes(1))))
                     .build();
         };
     }
@@ -51,6 +55,7 @@ public class RateLimitingConfig {
         GENERAL,
         ML_PREDICTION,
         CHAT,
-        FILE_UPLOAD
+        FILE_UPLOAD,
+        LOGIN
     }
 }

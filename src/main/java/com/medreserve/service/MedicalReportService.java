@@ -67,6 +67,11 @@ public class MedicalReportService {
         report.setFilePath(filePath);
         report.setFileSize(file.getSize());
         report.setContentType(file.getContentType());
+        // Compute checksum for auditing/integrity
+        try {
+            String checksum = fileStorageService.calculateChecksum("reports", fileName);
+            report.setSha256Checksum(checksum);
+        } catch (Exception ignored) { }
         report.setReportType(request.getReportType());
         report.setReportDate(request.getReportDate() != null ? request.getReportDate() : LocalDateTime.now());
         report.setLabName(request.getLabName());
@@ -114,6 +119,7 @@ public class MedicalReportService {
         return reports.stream().map(this::convertToResponse).collect(Collectors.toList());
     }
     
+    @Transactional(readOnly = true)
     public MedicalReportResponse getReportById(Long reportId, Long userId) {
         MedicalReport report = medicalReportRepository.findById(reportId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medical report not found"));
@@ -133,6 +139,7 @@ public class MedicalReportService {
         return convertToResponse(report);
     }
     
+    @Transactional(readOnly = true)
     public Resource downloadReport(Long reportId, Long userId) {
         MedicalReport report = medicalReportRepository.findById(reportId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medical report not found"));
@@ -149,6 +156,7 @@ public class MedicalReportService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized to download this report");
         }
         
+        log.info("Medical report download: reportId={}, requestedByUserId={}", reportId, userId);
         return fileStorageService.loadFileAsResource(report.getFileName(), "reports");
     }
     
@@ -209,6 +217,7 @@ public class MedicalReportService {
         response.setOriginalFileName(report.getOriginalFileName());
         response.setFileSize(report.getFileSize());
         response.setContentType(report.getContentType());
+        response.setSha256Checksum(report.getSha256Checksum());
         response.setReportType(report.getReportType());
         response.setReportDate(report.getReportDate());
         response.setLabName(report.getLabName());

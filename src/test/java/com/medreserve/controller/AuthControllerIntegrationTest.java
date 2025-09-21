@@ -20,6 +20,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.time.LocalDate;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -153,5 +158,90 @@ class AuthControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testChangePasswordSuccess() throws Exception {
+        // Create user
+        User u = new User();
+        u.setFirstName("P");
+        u.setLastName("Q");
+        u.setEmail("cp_success@example.com");
+        u.setPassword(passwordEncoder.encode("OldStrong1@"));
+        u.setRole(patientRole);
+        u.setIsActive(true);
+        u.setEmailVerified(true);
+        User saved = userRepository.save(u);
+
+        // Prepare request body
+        Map<String, String> body = new HashMap<>();
+        body.put("currentPassword", "OldStrong1@");
+        body.put("newPassword", "NewStrong1@");
+
+        mockMvc.perform(post("/auth/change-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body))
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(saved)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void testChangePasswordWrongCurrent() throws Exception {
+        // Create user
+        User u = new User();
+        u.setFirstName("P");
+        u.setLastName("Q");
+        u.setEmail("cp_wrong@example.com");
+        u.setPassword(passwordEncoder.encode("OldStrong1@"));
+        u.setRole(patientRole);
+        u.setIsActive(true);
+        u.setEmailVerified(true);
+        User saved = userRepository.save(u);
+
+        Map<String, String> body = new HashMap<>();
+        body.put("currentPassword", "Wrong1@");
+        body.put("newPassword", "NewStrong1@");
+
+        mockMvc.perform(post("/auth/change-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body))
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(saved)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void testRefreshTokenFlow() throws Exception {
+        // Create and login user to obtain refresh token
+        User u = new User();
+        u.setFirstName("R");
+        u.setLastName("T");
+        u.setEmail("refresh_user@example.com");
+        u.setPassword(passwordEncoder.encode("OldStrong1@"));
+        u.setRole(patientRole);
+        u.setIsActive(true);
+        u.setEmailVerified(true);
+        userRepository.save(u);
+
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setEmail("refresh_user@example.com");
+        loginRequest.setPassword("OldStrong1@");
+
+        var loginResult = mockMvc.perform(post("/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String loginJson = loginResult.getResponse().getContentAsString();
+        JsonNode loginNode = objectMapper.readTree(loginJson);
+        String refreshToken = loginNode.get("refreshToken").asText();
+
+        // Call refresh endpoint
+        mockMvc.perform(post("/auth/refresh")
+                .param("refreshToken", refreshToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").exists());
     }
 }

@@ -55,6 +55,9 @@ public class MedicalReport {
     @Column(name = "content_type", nullable = false)
     private String contentType;
     
+    @Column(name = "sha256_checksum", length = 64)
+    private String sha256Checksum;
+    
     @Enumerated(EnumType.STRING)
     @Column(name = "report_type", nullable = false)
     private ReportType reportType;
