@@ -21,8 +21,14 @@ class DiseaseMedicinePredictor:
     Predicts diseases and medicines based on doctor-entered symptoms
     """
     
-    def __init__(self, model_dir: str = "backend/ml/models"):
-        self.model_dir = model_dir
+    def __init__(self, model_dir: str = "models"):
+        # Support both legacy and new paths
+        if os.path.exists("backend/ml/models"):
+            self.model_dir = "backend/ml/models"
+        elif os.path.exists("models"):
+            self.model_dir = "models"
+        else:
+            self.model_dir = model_dir
         self.nlp_pipeline = MedicalNLPPipeline()
         self.disease_model = None
         self.medicine_model = None

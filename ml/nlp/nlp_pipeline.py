@@ -19,33 +19,54 @@ import os
 
 # Download required NLTK data with error handling
 def download_nltk_data():
-    """Download NLTK data with proper error handling"""
+    """Download NLTK data with proper error handling and fallbacks"""
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    # Set NLTK data path to multiple locations for better compatibility
+    nltk_data_paths = [
+        '/app/nltk_data',
+        os.path.expanduser('~/nltk_data'),
+        '/usr/share/nltk_data',
+        '/usr/local/share/nltk_data'
+    ]
+
+    for path in nltk_data_paths:
+        if path not in nltk.data.path:
+            nltk.data.path.insert(0, path)
+
     required_data = [
         ('tokenizers/punkt', 'punkt'),
         ('corpora/stopwords', 'stopwords'),
         ('corpora/wordnet', 'wordnet')
     ]
 
+    success_count = 0
     for data_path, download_name in required_data:
         try:
             nltk.data.find(data_path)
+            success_count += 1
+            logger.info(f"NLTK data found: {download_name}")
         except LookupError:
             try:
-                print(f"Downloading NLTK data: {download_name}")
+                logger.info(f"Downloading NLTK data: {download_name}")
                 nltk.download(download_name, quiet=True)
+                success_count += 1
             except Exception as e:
-                print(f"Warning: Failed to download {download_name}: {e}")
+                logger.warning(f"Failed to download {download_name}: {e}")
                 continue
 
-    # Try punkt_tab for newer NLTK versions, but don't fail if it doesn't exist
+    # Try punkt_tab for newer NLTK versions
     try:
         nltk.data.find('tokenizers/punkt_tab')
     except LookupError:
         try:
             nltk.download('punkt_tab', quiet=True)
         except Exception:
-            # punkt_tab doesn't exist in older versions, use punkt instead
-            pass
+            pass  # Optional data, not critical
+
+    return success_count >= 2  # Return success if at least 2/3 required packages loaded
 
 # Download NLTK data
 download_nltk_data()

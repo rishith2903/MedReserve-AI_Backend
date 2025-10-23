@@ -16,14 +16,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from predict.predict_specialization import SpecializationPredictor, fallback_specialization_prediction
 from predict.predict_disease_medicine import DiseaseMedicinePredictor
+from utils.validation import InputValidator, create_validation_error
+from utils.logging_config import setup_logging, RequestLogger
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = setup_logging(log_level=os.environ.get('LOG_LEVEL', 'INFO'))
+request_logger = RequestLogger(logger)
 
 # Initialize predictors
 specialization_predictor = None
@@ -129,22 +131,27 @@ def predict_specialization():
     try:
         # Validate request
         if not request.is_json:
-            return jsonify({'error': 'Request must be JSON'}), 400
-        
+            return create_validation_error('Request must be JSON')
+
         data = request.get_json()
-        
+
         if 'symptoms' not in data:
-            return jsonify({'error': 'Missing required field: symptoms'}), 400
-        
-        symptoms = data['symptoms']
+            return create_validation_error('Missing required field: symptoms')
+
+        # Validate and sanitize symptoms
+        is_valid, error_msg, sanitized_symptoms = InputValidator.validate_symptoms(data['symptoms'])
+        if not is_valid:
+            return create_validation_error(error_msg)
+
+        symptoms = sanitized_symptoms
         top_k = data.get('top_k', 3)
-        
-        # Validate inputs
-        if not symptoms or not symptoms.strip():
-            return jsonify({'error': 'Symptoms cannot be empty'}), 400
-        
-        if not isinstance(top_k, int) or top_k < 1 or top_k > 10:
-            return jsonify({'error': 'top_k must be an integer between 1 and 10'}), 400
+
+        # Validate top_k
+        is_valid, error_msg, validated_top_k = InputValidator.validate_top_k(top_k, max_value=10)
+        if not is_valid:
+            return create_validation_error(error_msg)
+
+        top_k = validated_top_k
         
         # Make prediction
         if specialization_predictor and hasattr(specialization_predictor, 'is_loaded') and specialization_predictor.is_loaded:
@@ -167,19 +174,26 @@ def predict_specialization():
                 # Use fallback prediction
                 result = fallback_specialization_prediction(symptoms, top_k)
                 result['fallback'] = True
-        
-        # Add request metadata
-        result['request_id'] = f"spec_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        result['input_symptoms'] = symptoms
-        
-        return jsonify(result)
+
+        # Add request metadata and standardize response format
+        response = {
+            'success': True,
+            'request_id': f"spec_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            'input_symptoms': symptoms,
+            'data': result,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        return jsonify(response)
         
     except Exception as e:
         logger.error(f"Error in predict_specialization: {e}")
         logger.error(traceback.format_exc())
         return jsonify({
+            'success': False,
             'error': 'Internal server error',
-            'message': str(e)
+            'message': str(e),
+            'timestamp': datetime.now().isoformat()
         }), 500
 
 @app.route('/predict/diagnosis', methods=['POST'])
@@ -197,26 +211,33 @@ def predict_diagnosis():
     try:
         # Validate request
         if not request.is_json:
-            return jsonify({'error': 'Request must be JSON'}), 400
-        
+            return create_validation_error('Request must be JSON')
+
         data = request.get_json()
-        
+
         if 'symptoms' not in data:
-            return jsonify({'error': 'Missing required field: symptoms'}), 400
-        
-        symptoms = data['symptoms']
+            return create_validation_error('Missing required field: symptoms')
+
+        # Validate and sanitize symptoms
+        is_valid, error_msg, sanitized_symptoms = InputValidator.validate_symptoms(data['symptoms'])
+        if not is_valid:
+            return create_validation_error(error_msg)
+
+        symptoms = sanitized_symptoms
         top_diseases = data.get('top_diseases', 5)
         top_medicines = data.get('top_medicines', 5)
-        
-        # Validate inputs
-        if not symptoms or not symptoms.strip():
-            return jsonify({'error': 'Symptoms cannot be empty'}), 400
-        
-        if not isinstance(top_diseases, int) or top_diseases < 1 or top_diseases > 20:
-            return jsonify({'error': 'top_diseases must be an integer between 1 and 20'}), 400
-        
-        if not isinstance(top_medicines, int) or top_medicines < 1 or top_medicines > 20:
-            return jsonify({'error': 'top_medicines must be an integer between 1 and 20'}), 400
+
+        # Validate top_diseases and top_medicines
+        is_valid, error_msg, validated_diseases = InputValidator.validate_top_k(top_diseases, max_value=20)
+        if not is_valid:
+            return create_validation_error(f"top_diseases: {error_msg}")
+
+        is_valid, error_msg, validated_medicines = InputValidator.validate_top_k(top_medicines, max_value=20)
+        if not is_valid:
+            return create_validation_error(f"top_medicines: {error_msg}")
+
+        top_diseases = validated_diseases
+        top_medicines = validated_medicines
         
         # Make prediction
         if diagnosis_predictor:
@@ -226,19 +247,26 @@ def predict_diagnosis():
             temp_predictor = DiseaseMedicinePredictor()
             result = temp_predictor.predict_diagnosis(symptoms, top_diseases, top_medicines)
             result['fallback'] = True
-        
-        # Add request metadata
-        result['request_id'] = f"diag_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        result['input_symptoms'] = symptoms
-        
-        return jsonify(result)
+
+        # Add request metadata and standardize response format
+        response = {
+            'success': True,
+            'request_id': f"diag_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            'input_symptoms': symptoms,
+            'data': result,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        return jsonify(response)
         
     except Exception as e:
         logger.error(f"Error in predict_diagnosis: {e}")
         logger.error(traceback.format_exc())
         return jsonify({
+            'success': False,
             'error': 'Internal server error',
-            'message': str(e)
+            'message': str(e),
+            'timestamp': datetime.now().isoformat()
         }), 500
 
 @app.route('/models/info', methods=['GET'])

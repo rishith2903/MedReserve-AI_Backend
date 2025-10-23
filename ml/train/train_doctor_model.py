@@ -437,7 +437,7 @@ class DoctorDiagnosisModel:
             'symptoms_processed': self.nlp_pipeline.preprocess_text(symptoms_text)
         }
     
-    def save_models(self, model_dir: str = "backend/ml/models"):
+    def save_models(self, model_dir: str = "models"):
         """
         Save the trained models and components
         """
@@ -468,7 +468,7 @@ class DoctorDiagnosisModel:
         
         print(f"Models saved to {model_dir}")
     
-    def load_models(self, model_dir: str = "backend/ml/models"):
+    def load_models(self, model_dir: str = "models"):
         """
         Load trained models
         """
