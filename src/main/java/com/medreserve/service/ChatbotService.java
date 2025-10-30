@@ -7,8 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +27,8 @@ public class ChatbotService {
     @Value("${chatbot.service.url:http://localhost:5005}")
     private String chatbotServiceUrl;
     
+    @Retry(name = "chatbotService")
+    @CircuitBreaker(name = "chatbotService")
     public ChatResponse processMessage(ChatRequest request, String jwtToken) {
         try {
             // Prepare headers
@@ -56,6 +61,7 @@ public class ChatbotService {
         }
     }
     
+    @Cacheable(cacheNames = "chatbotIntents", key = "'intents'")
     public Map<String, Object> getAvailableIntents(String jwtToken) {
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -81,6 +87,7 @@ public class ChatbotService {
         return getDefaultIntents();
     }
     
+    @Cacheable(cacheNames = "serviceHealth", key = "'chatbot'")
     public boolean isChatbotServiceHealthy() {
         try {
             ResponseEntity<Map> response = restTemplate.getForEntity(

@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
@@ -153,16 +154,19 @@ public class DoctorService {
         return doctors.map(this::convertToResponse);
     }
     
+    @Cacheable(cacheNames = "doctorSpecialties", key = "'all'")
     public List<String> getAllSpecialties() {
         return doctorRepository.findAllAvailableSpecialties();
     }
     
+    @Cacheable(cacheNames = "doctorById", key = "#doctorId")
     public DoctorResponse getDoctorById(Long doctorId) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor not found"));
         return convertToResponse(doctor);
     }
     
+    @Cacheable(cacheNames = "doctorByUserId", key = "#userId")
     public DoctorResponse getDoctorByUserId(Long userId) {
         Doctor doctor = doctorRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));

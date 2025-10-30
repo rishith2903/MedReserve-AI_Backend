@@ -46,6 +46,10 @@ server:
   port: ${PORT:8080}
   error:
     include-message: always
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,application/xml
+    min-response-size: 1024
 
 # JWT Configuration
 jwt:
@@ -77,6 +81,8 @@ http:
   client:
     connect-timeout-ms: ${HTTP_CLIENT_CONNECT_TIMEOUT_MS:5000}
     read-timeout-ms: ${HTTP_CLIENT_READ_TIMEOUT_MS:10000}
+    max-total-connections: ${HTTP_CLIENT_MAX_TOTAL:200}
+    max-per-route-connections: ${HTTP_CLIENT_MAX_PER_ROUTE:50}
 
 disease:
   prediction:
@@ -132,3 +138,42 @@ management:
   health:
     mail:
       enabled: false
+
+resilience4j:
+  retry:
+    instances:
+      mlService:
+        max-attempts: 2
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2.0
+        retry-exceptions:
+          - java.io.IOException
+          - org.springframework.web.client.ResourceAccessException
+      mlHealth:
+        max-attempts: 1
+      chatbotService:
+        max-attempts: 2
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2.0
+        retry-exceptions:
+          - java.io.IOException
+          - org.springframework.web.client.ResourceAccessException
+  circuitbreaker:
+    instances:
+      mlService:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+      mlHealth:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 5
+      chatbotService:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10

@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -141,6 +142,7 @@ public class AppointmentService {
         return MessageResponse.success("Appointment cancelled successfully");
     }
     
+    @Cacheable(cacheNames = "availableSlots", key = "'d:' + #doctorId + ':dt:' + #date")
     public List<TimeSlotResponse> getAvailableSlots(Long doctorId, LocalDate date) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor not found"));

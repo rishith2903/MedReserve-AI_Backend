@@ -9,8 +9,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +30,8 @@ public class MLService {
     @Value("${ml.service.url:http://localhost:8001}")
     private String mlServiceUrl;
     
+    @Retry(name = "mlService")
+    @CircuitBreaker(name = "mlService")
     public SpecialtyPredictionResponse predictSpecialty(SymptomAnalysisRequest request, String jwtToken) {
         try {
             // Prepare request body
@@ -70,7 +75,16 @@ public class MLService {
             return createFallbackResponse(request.getSymptoms());
         }
     }
+
+    // Fallback for predictSpecialty used by Resilience4j
+    private SpecialtyPredictionResponse predictSpecialtyFallback(SymptomAnalysisRequest request, String jwtToken, Throwable t) {
+        log.warn("predictSpecialtyFallback invoked due to: {}", t != null ? t.getMessage() : "unknown");
+        return createFallbackResponse(request.getSymptoms());
+    }
     
+    @Cacheable(cacheNames = "mlSpecialties", key = "'specialties'")
+    @Retry(name = "mlService")
+    @CircuitBreaker(name = "mlService")
     public List<String> getAvailableSpecialties(String jwtToken) {
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -102,6 +116,9 @@ public class MLService {
         return getDefaultSpecialties();
     }
     
+    @Cacheable(cacheNames = "serviceHealth", key = "'ml'")
+    @Retry(name = "mlHealth")
+    @CircuitBreaker(name = "mlHealth")
     public boolean isMLServiceHealthy() {
         try {
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
