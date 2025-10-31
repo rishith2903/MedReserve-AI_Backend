@@ -413,6 +413,122 @@ def method_not_allowed(error):
 def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
+
+def analyze_symptoms_logic(symptoms):
+    symptoms_lower = symptoms.lower()
+
+    conditions = []
+    if ('fever' in symptoms_lower) or ('temperature' in symptoms_lower):
+        if ('cough' in symptoms_lower) or ('throat' in symptoms_lower):
+            conditions.append({
+                'name': 'Upper Respiratory Infection',
+                'probability': 'High',
+                'description': 'Common infection affecting nose, throat, and airways.'
+            })
+            conditions.append({
+                'name': 'Influenza',
+                'probability': 'Medium',
+                'description': 'Viral infection with fever, aches, fatigue, and respiratory symptoms.'
+            })
+    if 'headache' in symptoms_lower:
+        conditions.append({
+            'name': 'Tension Headache',
+            'probability': 'Medium',
+            'description': 'Often caused by stress, muscle tension, or posture.'
+        })
+        if ('nausea' in symptoms_lower) or ('light' in symptoms_lower):
+            conditions.append({
+                'name': 'Migraine',
+                'probability': 'Medium',
+                'description': 'Moderate to severe headaches with sensitivity to light/sound.'
+            })
+    if ('stomach' in symptoms_lower) or ('abdominal' in symptoms_lower):
+        conditions.append({
+            'name': 'Gastroenteritis',
+            'probability': 'Medium',
+            'description': 'Inflammation of stomach and intestines causing pain, nausea, diarrhea.'
+        })
+    if ('chest pain' in symptoms_lower) or ('chest pressure' in symptoms_lower):
+        conditions.append({
+            'name': 'Cardiac Event (Requires Immediate Evaluation)',
+            'probability': 'Unknown - Urgent Evaluation Needed',
+            'description': 'Chest pain can indicate serious cardiac conditions. Immediate evaluation is essential.'
+        })
+    if not conditions:
+        conditions.append({
+            'name': 'General Malaise',
+            'probability': 'Medium',
+            'description': 'Non-specific symptoms with various possible causes.'
+        })
+        conditions.append({
+            'name': 'Viral Infection',
+            'probability': 'Low to Medium',
+            'description': 'General symptoms may reflect common viral illness.'
+        })
+    conditions = conditions[:4]
+
+    recommendations = []
+    recommendations.append('Consult with a healthcare professional for proper diagnosis and treatment plan')
+    if 'fever' in symptoms_lower:
+        recommendations.append('Monitor temperature and stay hydrated')
+        recommendations.append('Rest adequately')
+    if 'pain' in symptoms_lower:
+        recommendations.append('Track pain intensity, location, and triggers')
+        recommendations.append('Consider OTC pain relief as appropriate (consult pharmacist)')
+    if ('cough' in symptoms_lower) or ('throat' in symptoms_lower):
+        recommendations.append('Stay hydrated; warm liquids can soothe throat irritation')
+        recommendations.append('Avoid irritants like smoke and strong odors')
+    recommendations.append('Document symptoms, onset, and changes in severity')
+    recommendations.append('Seek immediate care if symptoms worsen or new concerning symptoms develop')
+    recommendations = recommendations[:5]
+
+    emergency_keywords = [
+        'chest pain', 'difficulty breathing', "can't breathe", 'severe bleeding',
+        'unconscious', 'seizure', 'stroke', 'heart attack', 'severe head injury',
+        'severe abdominal pain', 'coughing blood', 'suicidal'
+    ]
+    for kw in emergency_keywords:
+        if kw in symptoms_lower:
+            urgency = 'Emergency - Seek immediate medical attention or call emergency services'
+            break
+    else:
+        urgent_keywords = [
+            'high fever', 'persistent vomiting', 'severe pain', 'confusion',
+            'persistent diarrhea', 'dehydration', 'spreading rash'
+        ]
+        if any(kw in symptoms_lower for kw in urgent_keywords):
+            urgency = 'Urgent - Consult healthcare provider within 24 hours'
+        else:
+            symptom_count = symptoms.count(',') + symptoms.count('and') + 1
+            if symptom_count > 3:
+                urgency = 'Routine - Schedule appointment with healthcare provider soon'
+            else:
+                urgency = 'Monitor - Track symptoms and consult healthcare provider if worsening or persistent'
+
+    result = {
+        'conditions': conditions,
+        'recommendations': recommendations,
+        'urgencyLevel': urgency,
+        'disclaimer': 'This analysis is for educational purposes only and not a substitute for professional medical advice. Seek professional care as needed.'
+    }
+    return result
+
+@app.route('/analyze-symptoms', methods=['POST'])
+def analyze_symptoms():
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Request must be JSON'}), 400
+        data = request.get_json()
+        if 'symptoms' not in data or not str(data['symptoms']).strip():
+            return jsonify({'error': 'Symptoms and sessionId are required' if 'sessionId' in data else 'Symptoms are required'}), 400
+        symptoms = str(data['symptoms']).strip()
+        analysis = analyze_symptoms_logic(symptoms)
+        return jsonify(analysis)
+    except Exception as e:
+        logger.error(f"Error in analyze_symptoms: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': 'Internal server error', 'message': str(e)}), 500
+
 if __name__ == '__main__':
     # Initialize models on startup
     initialize_models()
@@ -429,5 +545,6 @@ if __name__ == '__main__':
     print("  GET  /models/info - Model information")
     print("  POST /predict/batch/specialization - Batch specialization prediction")
     print("  POST /predict/batch/diagnosis - Batch diagnosis prediction")
-    
+    print("  POST /analyze-symptoms - Educational symptom analysis (project-compatible)")
+
     app.run(host='0.0.0.0', port=port, debug=debug)

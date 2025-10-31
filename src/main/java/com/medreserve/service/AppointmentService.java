@@ -160,33 +160,27 @@ public class AppointmentService {
         List<Appointment> existingAppointments = appointmentRepository
                 .findDoctorAppointmentsByDateRange(doctorId, dayStart, dayEnd);
         
-        // Generate morning slots
-        if (doctor.getMorningStartTime() != null && doctor.getMorningEndTime() != null) {
-            generateSlotsForSession(doctor, date, doctor.getMorningStartTime(), 
-                                  doctor.getMorningEndTime(), "MORNING", 
-                                  existingAppointments, availableSlots);
-        }
-        
-        // Generate evening slots
-        if (doctor.getEveningStartTime() != null && doctor.getEveningEndTime() != null) {
-            generateSlotsForSession(doctor, date, doctor.getEveningStartTime(), 
-                                  doctor.getEveningEndTime(), "EVENING", 
-                                  existingAppointments, availableSlots);
-        }
+        // Generate slots within fixed window 09:00–21:00
+        LocalTime allowedStartTime = LocalTime.of(9, 0);
+        LocalTime allowedEndTime = LocalTime.of(21, 0);
+        generateSlotsForSession(doctor, date, allowedStartTime, allowedEndTime, "DAY", existingAppointments, availableSlots);
         
         return availableSlots;
     }
     
+    @Transactional(readOnly = true)
     public Page<AppointmentResponse> getPatientAppointments(Long patientId, Pageable pageable) {
         Page<Appointment> appointments = appointmentRepository.findByPatientId(patientId, pageable);
         return appointments.map(this::convertToResponse);
     }
     
+    @Transactional(readOnly = true)
     public Page<AppointmentResponse> getDoctorAppointments(Long doctorId, Pageable pageable) {
         Page<Appointment> appointments = appointmentRepository.findByDoctorId(doctorId, pageable);
         return appointments.map(this::convertToResponse);
     }
     
+    @Transactional(readOnly = true)
     public AppointmentResponse getAppointmentById(Long appointmentId, Long userId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found"));
@@ -206,19 +200,15 @@ public class AppointmentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot book appointment in the past");
         }
         
-        // Check if appointment is within working hours
+        // Check if appointment is within fixed working window 09:00–21:00
         LocalTime appointmentTime = appointmentDateTime.toLocalTime();
-        boolean inMorningSession = doctor.getMorningStartTime() != null && doctor.getMorningEndTime() != null &&
-                !appointmentTime.isBefore(doctor.getMorningStartTime()) && 
-                !appointmentTime.isAfter(doctor.getMorningEndTime().minusMinutes(durationMinutes));
-        
-        boolean inEveningSession = doctor.getEveningStartTime() != null && doctor.getEveningEndTime() != null &&
-                !appointmentTime.isBefore(doctor.getEveningStartTime()) && 
-                !appointmentTime.isAfter(doctor.getEveningEndTime().minusMinutes(durationMinutes));
-        
-        if (!inMorningSession && !inEveningSession) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                    "Appointment time is outside doctor's working hours");
+        LocalTime allowedStart = LocalTime.of(9, 0);
+        LocalTime allowedEnd = LocalTime.of(21, 0);
+        boolean inAllowedWindow = !appointmentTime.isBefore(allowedStart) &&
+                !appointmentTime.isAfter(allowedEnd.minusMinutes(durationMinutes));
+        if (!inAllowedWindow) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Appointment time is outside allowed hours (09:00–21:00)");
         }
         
         // Check if appointment time is aligned with slot duration

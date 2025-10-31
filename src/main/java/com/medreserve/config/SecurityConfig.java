@@ -101,6 +101,9 @@ public class SecurityConfig {
                 .requestMatchers("/smart-features/conditions/**").permitAll()
                 .requestMatchers("/smart-features/**").permitAll()
 
+                // Public AI analyze endpoint (project-compatible output)
+                .requestMatchers("/ai/analyze-symptoms").permitAll()
+
                 // Public health tips and medicines endpoints
                 .requestMatchers("/health-tips/**").permitAll()
                 .requestMatchers("/medicines/**").permitAll()

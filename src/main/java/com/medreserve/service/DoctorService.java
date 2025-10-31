@@ -159,6 +159,7 @@ public class DoctorService {
         return doctorRepository.findAllAvailableSpecialties();
     }
     
+    @Transactional(readOnly = true)
     @Cacheable(cacheNames = "doctorById", key = "#doctorId")
     public DoctorResponse getDoctorById(Long doctorId) {
         Doctor doctor = doctorRepository.findById(doctorId)
@@ -166,6 +167,7 @@ public class DoctorService {
         return convertToResponse(doctor);
     }
     
+    @Transactional(readOnly = true)
     @Cacheable(cacheNames = "doctorByUserId", key = "#userId")
     public DoctorResponse getDoctorByUserId(Long userId) {
         Doctor doctor = doctorRepository.findByUserId(userId)

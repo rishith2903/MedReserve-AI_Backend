@@ -16,7 +16,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.client.ResourceAccessException;
 
 import java.util.*;
 
@@ -104,38 +103,9 @@ public class MLController {
                 ));
             }
 
-            // Prepare request for ML API
-            Map<String, Object> mlRequest = new HashMap<>();
-            mlRequest.put("symptoms", symptoms);
-            mlRequest.put("top_k", request.getOrDefault("top_k", 3));
-
-            // Set headers
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(mlRequest, headers);
-
-            try {
-                // Call ML API
-                ResponseEntity<Map> response = restTemplate.postForEntity(
-                    mlApiUrl + "/predict/specialization",
-                    entity,
-                    Map.class
-                );
-
-                if (response.getStatusCode() == HttpStatus.OK) {
-                    Map<String, Object> result = response.getBody();
-                    log.info("ML API prediction successful");
-                    return ResponseEntity.ok(result);
-                } else {
-                    log.error("ML API returned error status: {}", response.getStatusCode());
-                    return getFallbackSpecializationPrediction(symptoms, (Integer) request.getOrDefault("top_k", 3));
-                }
-
-            } catch (ResourceAccessException e) {
-                log.warn("ML API not available, using fallback prediction: {}", e.getMessage());
-                return getFallbackSpecializationPrediction(symptoms, (Integer) request.getOrDefault("top_k", 3));
-            }
+            int topK = (Integer) request.getOrDefault("top_k", 3);
+            // Use internal fallback logic directly
+            return getFallbackSpecializationPrediction(symptoms, topK);
 
         } catch (Exception e) {
             log.error("Error in specialization prediction: ", e);
@@ -166,43 +136,10 @@ public class MLController {
                 ));
             }
 
-            // Prepare request for ML API
-            Map<String, Object> mlRequest = new HashMap<>();
-            mlRequest.put("symptoms", symptoms);
-            mlRequest.put("top_diseases", request.getOrDefault("top_diseases", 5));
-            mlRequest.put("top_medicines", request.getOrDefault("top_medicines", 5));
-
-            // Set headers
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(mlRequest, headers);
-
-            try {
-                // Call ML API
-                ResponseEntity<Map> response = restTemplate.postForEntity(
-                    mlApiUrl + "/predict/diagnosis",
-                    entity,
-                    Map.class
-                );
-
-                if (response.getStatusCode() == HttpStatus.OK) {
-                    Map<String, Object> result = response.getBody();
-                    log.info("ML API diagnosis prediction successful");
-                    return ResponseEntity.ok(result);
-                } else {
-                    log.error("ML API returned error status: {}", response.getStatusCode());
-                    return getFallbackDiagnosisPrediction(symptoms,
-                        (Integer) request.getOrDefault("top_diseases", 5),
-                        (Integer) request.getOrDefault("top_medicines", 5));
-                }
-
-            } catch (ResourceAccessException e) {
-                log.warn("ML API not available, using fallback prediction: {}", e.getMessage());
-                return getFallbackDiagnosisPrediction(symptoms,
-                    (Integer) request.getOrDefault("top_diseases", 5),
-                    (Integer) request.getOrDefault("top_medicines", 5));
-            }
+            int topDiseases = (Integer) request.getOrDefault("top_diseases", 5);
+            int topMedicines = (Integer) request.getOrDefault("top_medicines", 5);
+            // Use internal fallback logic directly
+            return getFallbackDiagnosisPrediction(symptoms, topDiseases, topMedicines);
 
         } catch (Exception e) {
             log.error("Error in diagnosis prediction: ", e);
